@@ -29,7 +29,8 @@ function MenuContent() {
   const [placing, setPlacing] = useState(false);
 
   const { data: liveItems, loading: menuLoading } = useSupabaseTable<MenuItem>("menu_items", mockMenuItems, (q) => q.eq("is_available", true).order("category", { ascending: true }));
-  const menuItems = isDemo ? mockMenuItems : liveItems;
+  // always show something for customer — fallback to mocks if Supabase empty (dashboard stays strict)
+  const menuItems = isDemo ? mockMenuItems : (liveItems.length ? liveItems : menuLoading ? [] : mockMenuItems);
   const categories = useMemo(() => {
     const cats = Array.from(new Set(menuItems.map((m) => m.category)));
     return ["Recommended", ...cats];

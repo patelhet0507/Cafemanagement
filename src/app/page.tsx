@@ -124,12 +124,12 @@ export default function LandingPage() {
       </main>
 
       <footer className="border-t border-border">
-        <div className="max-w-[1160px] mx-auto px-6 lg:px-8 h-14 flex items-center justify-between text-xs text-text-muted">
+        <div className="max-w-[1160px] mx-auto px-6 lg:px-8 h-14 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-text-muted">
           <span>© {new Date().getFullYear()} CafeFlow — Built for independent cafes</span>
-          <div className="flex items-center gap-4">
-            <Link href="/menu?table=1" className="hover:text-text-primary">Menu</Link>
-            <Link href="/scan" className="hover:text-text-primary">Scan</Link>
-            <span className="opacity-20 hover:opacity-100 transition-opacity"><Link href="/login" className="w-2 h-2 rounded-full bg-border inline-block" aria-label="Staff" title="Staff" /></span>
+          <div className="flex items-center gap-2">
+            <Link href="/menu?table=1" className="px-3 py-1.5 rounded-full border border-border hover:bg-surface-hover">Menu</Link>
+            <Link href="/scan" className="px-3 py-1.5 rounded-full border border-border hover:bg-surface-hover">Scan</Link>
+            <Link href="/login" className="px-4 py-1.5 rounded-full bg-primary text-white font-medium hover:bg-primary-hover">Staff Login</Link>
           </div>
         </div>
       </footer>

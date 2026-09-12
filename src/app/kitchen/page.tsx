@@ -49,6 +49,7 @@ function KOTCard({ kot, onMove }: { kot: KOT; onMove: (id: string, status: KOT["
           </div>
         ))}
       </div>
+      <button onClick={() => window.print()} className="w-full py-1.5 rounded-lg border border-border text-xs font-medium hover:bg-surface-hover">Print KOT</button>
       {nextStatus && (
         <button onClick={() => onMove(kot.id, nextStatus)}
           className={cn("w-full py-2.5 rounded-lg text-sm font-semibold flex items-center justify-center gap-1.5 transition-colors",

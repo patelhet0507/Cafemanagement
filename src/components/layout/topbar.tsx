@@ -1,8 +1,9 @@
 "use client";
 
-import { Search, Bell, HelpCircle, LogOut } from "lucide-react";
+import { Search, Bell, HelpCircle, LogOut, Moon, Sun } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/components/auth/auth-provider";
+import { useEffect, useState } from "react";
 
 const titles: Record<string, string> = {
   "/dashboard": "Dashboard",
@@ -21,6 +22,10 @@ const titles: Record<string, string> = {
 export function Topbar() {
   const pathname = usePathname();
   const { user, logout } = useAuth();
+  const [dark, setDark] = useState(false);
+  useEffect(() => { setDark(document.documentElement.classList.contains("dark")); }, []);
+  const toggleDark = () => { const d = !dark; setDark(d); document.documentElement.classList.toggle("dark", d); localStorage.setItem("theme", d ? "dark" : "light"); };
+  useEffect(() => { const s = localStorage.getItem("theme"); if (s === "dark") { document.documentElement.classList.add("dark"); setDark(true); } }, []);
   const title = titles[pathname] ?? (pathname.startsWith("/pos") ? "Tables" : pathname.startsWith("/kitchen") ? "Kitchen" : "Dashboard");
   return (
     <header className="sticky top-0 z-30 flex items-center h-16 px-6 bg-background/80 backdrop-blur-md border-b border-border">
@@ -53,6 +58,10 @@ export function Topbar() {
           <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-error" />
         </button>
 
+        {/* Dark */}
+        <button onClick={toggleDark} className="flex items-center justify-center w-9 h-9 rounded-lg hover:bg-surface-hover transition-colors" title="Toggle dark">
+          {dark ? <Sun className="w-[18px] h-[18px] text-text-secondary" /> : <Moon className="w-[18px] h-[18px] text-text-secondary" />}
+        </button>
         {/* Help */}
         <button className="hidden sm:flex items-center justify-center w-9 h-9 rounded-lg hover:bg-surface-hover transition-colors">
           <HelpCircle className="w-[18px] h-[18px] text-text-secondary" />

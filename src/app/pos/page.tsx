@@ -167,6 +167,9 @@ export default function POSPage() {
                       <Link href={`/menu?table=${selected.number}`} className="px-4 py-2 rounded-xl bg-accent text-white text-sm font-medium hover:bg-accent-hover">Open Menu (QR)</Link>
                       <button onClick={() => setSelectedId(null)} className="px-4 py-2 rounded-xl border border-border text-sm hover:bg-surface-hover">Close</button>
                     </div>
+                    {!isPaid && selected && selected.status === "available" && (
+                      <button onClick={async () => { if (isSupabaseConfigured) await supabase.from("tables").update({ status: "reserved" } as never).eq("id", selected.id); setSelectedId(null); }} className="mt-3 text-xs font-medium px-3 py-1.5 rounded-full border border-border hover:bg-surface-hover">Reserve Table</button>
+                    )}
                   </div>
                 ) : (
                   <>
@@ -194,6 +197,15 @@ export default function POSPage() {
                           </button>
                         ))}
                       </div>
+                    </div>
+                    <div className="rounded-xl border border-border p-3 bg-background">
+                      <p className="text-xs font-semibold tracking-widest text-text-muted mb-2">SPLIT BILL</p>
+                      <div className="grid grid-cols-3 gap-2">
+                        {[2,3,4].map((n) => (
+                          <button key={n} onClick={() => alert(`${n} × ${formatCurrency(Math.round(selectedOrder!.total / n))} = ${formatCurrency(selectedOrder!.total)}`)} className="py-2 rounded-lg border border-border text-xs font-medium hover:bg-surface-hover">÷{n} <span className="font-mono">{formatCurrency(Math.round(selectedOrder!.total / n))}</span></button>
+                        ))}
+                      </div>
+                      <button onClick={() => window.print()} className="mt-2 w-full py-2 rounded-lg border border-border text-xs font-medium hover:bg-surface-hover">Print Bill</button>
                     </div>
                   </>
                 )}

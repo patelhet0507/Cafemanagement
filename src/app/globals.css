@@ -14,6 +14,22 @@
   --accent: #C2410C;
   --accent-light: #FFF7ED;
   --accent-hover: #9A3412;
+}
+
+.dark {
+  --background: #0C0A09;
+  --surface: #1C1917;
+  --surface-hover: #292524;
+  --border: #44403C;
+  --border-subtle: #292524;
+  --text-primary: #F5F5F4;
+  --text-secondary: #A8A29E;
+  --text-muted: #78716C;
+  --primary: #F5F5F4;
+  --primary-hover: #E7E5E4;
+  --accent: #EA580C;
+  --accent-light: #431407;
+  --accent-hover: #C2410C;
   --table-available: #22C55E;
   --table-occupied: #EF4444;
   --table-preparing: #3B82F6;

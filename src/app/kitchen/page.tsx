@@ -3,8 +3,10 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { Play, Check, ChefHat, Bell } from "lucide-react";
+import { Play, Check, ChefHat, Bell, Pencil, Trash2, X } from "lucide-react";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
+import { ConfirmDialog } from "@/components/shared/confirm-dialog";
+import { useToast } from "@/components/shared/toaster";
 
 interface KOT {
   id: string; // full UUID when live, short mock id when offline
@@ -27,7 +29,7 @@ const columnConfig = {
   ready: { label: "READY", color: "text-success", bg: "bg-success/10" },
 };
 
-function KOTCard({ kot, onMove }: { kot: KOT; onMove: (fullId: string, status: KOT["status"]) => void }) {
+function KOTCard({ kot, onMove, onEdit, onDelete }: { kot: KOT; onMove: (fullId: string, status: KOT["status"]) => void; onEdit: (kot: KOT) => void; onDelete: (kot: KOT) => void }) {
   const nextStatus = kot.status === "new" ? "preparing" : kot.status === "preparing" ? "ready" : kot.status === "ready" ? "collected" : null;
   return (
     <motion.div layout initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}
@@ -50,6 +52,10 @@ function KOTCard({ kot, onMove }: { kot: KOT; onMove: (fullId: string, status: K
           </div>
         ))}
       </div>
+      <div className="flex gap-1.5 mb-2">
+        <button onClick={() => onEdit(kot)} className="flex-1 py-1.5 rounded-lg border border-border hover:bg-surface-hover text-xs font-medium flex items-center justify-center gap-1"><Pencil className="w-3 h-3" /> Edit</button>
+        <button onClick={() => onDelete(kot)} className="flex-1 py-1.5 rounded-lg bg-error/10 text-error hover:bg-error hover:text-white text-xs font-medium flex items-center justify-center gap-1"><Trash2 className="w-3 h-3" /> Delete</button>
+      </div>
       <button onClick={() => window.print()} className="w-full py-1.5 rounded-lg bg-accent text-white text-xs font-semibold hover:bg-accent-hover border border-accent">Print KOT</button>
       {nextStatus && (
         <button onClick={() => onMove(kot.id, nextStatus)}
@@ -63,6 +69,10 @@ function KOTCard({ kot, onMove }: { kot: KOT; onMove: (fullId: string, status: K
 
 export default function KitchenPage() {
   const [kots, setKots] = useState<KOT[]>(initialKOTs);
+  const toast = useToast();
+  const [editing, setEditing] = useState<KOT | null>(null);
+  const [confirmDel, setConfirmDel] = useState<KOT | null>(null);
+  const [editItems, setEditItems] = useState<{ id: string; name: string; qty: number }[]>([]);
 
   const fetchKOTs = useCallback(async () => {
     if (!isSupabaseConfigured) return;
@@ -112,7 +122,6 @@ export default function KitchenPage() {
       alert(error.message.includes("schema cache") ? "Schema cache stale — run NOTIFY pgrst, 'reload schema';" : error.message);
       return;
     }
-    // if collected, free table when no other active orders remain
     if (status === "collected" && moved) {
       try {
         const { data: ord } = await supabase.from("orders").select("table_id").eq("id", fullId).single();
@@ -123,6 +132,43 @@ export default function KitchenPage() {
         }
       } catch {}
     }
+  };
+
+  const handleDelete = async () => {
+    if (!confirmDel) return;
+    const id = confirmDel.id;
+    setKots((p) => p.filter((k) => k.id !== id));
+    setConfirmDel(null);
+    if (!isSupabaseConfigured) { toast("Order deleted (mock)"); return; }
+    const { data: ord } = await supabase.from("orders").select("table_id").eq("id", id).single();
+    const tid = (ord as { table_id: string | null } | null)?.table_id;
+    const { error } = await supabase.from("orders").update({ status: "cancelled" } as never).eq("id", id);
+    if (error) { toast(error.message, "error"); return; }
+    if (tid) {
+      const { data: rem } = await supabase.from("orders").select("id").eq("table_id", tid).in("status", ["pending", "confirmed", "preparing", "ready"]);
+      if (!rem?.length) await supabase.from("tables").update({ status: "available" } as never).eq("id", tid);
+    }
+    toast("Order deleted");
+  };
+
+  const openEdit = async (kot: KOT) => {
+    setEditing(kot);
+    if (!isSupabaseConfigured) { setEditItems(kot.items.map((it, idx) => ({ id: `tmp-${idx}`, name: it.name, qty: it.qty }))); return; }
+    const { data } = await supabase.from("order_items").select("id, quantity, menu_item_id").eq("order_id", kot.id);
+    if (!data?.length) { setEditItems([]); return; }
+    const ids = (data as { menu_item_id: string }[]).map((d) => d.menu_item_id);
+    const { data: menus } = await supabase.from("menu_items").select("id, name").in("id", ids);
+    const map = new Map((menus as { id: string; name: string }[] | null)?.map((m) => [m.id, m.name]) ?? []);
+    setEditItems((data as { id: string; quantity: number; menu_item_id: string }[]).map((d) => ({ id: d.id, name: map.get(d.menu_item_id) ?? "Item", qty: d.quantity })));
+  };
+
+  const saveEdit = async () => {
+    if (!editing) return;
+    for (const it of editItems) {
+      if (it.qty <= 0) await supabase.from("order_items").delete().eq("id", it.id);
+      else await supabase.from("order_items").update({ quantity: it.qty } as never).eq("id", it.id);
+    }
+    setEditing(null); toast("Order updated"); fetchKOTs();
   };
   const columns: Array<"new" | "preparing" | "ready"> = ["new", "preparing", "ready"];
 
@@ -150,7 +196,7 @@ export default function KitchenPage() {
               </div>
               <div className="space-y-3 min-h-[200px]">
                 <AnimatePresence>
-                  {colKots.map((kot) => <KOTCard key={kot.id} kot={kot} onMove={moveKOT} />)}
+                  {colKots.map((kot) => <KOTCard key={kot.id} kot={kot} onMove={moveKOT} onEdit={openEdit} onDelete={(k) => setConfirmDel(k)} />)}
                 </AnimatePresence>
                 {colKots.length === 0 && (
                   <div className="flex items-center justify-center h-32 rounded-xl border border-dashed border-border text-text-muted text-sm">
@@ -162,6 +208,34 @@ export default function KitchenPage() {
           );
         })}
       </div>
+
+      {editing && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm" onClick={() => setEditing(null)}>
+          <div className="w-full max-w-md bg-surface rounded-2xl shadow-2xl p-5" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold">Edit Order #{editing.shortId} — T{editing.table}</h3>
+              <button onClick={() => setEditing(null)} className="w-8 h-8 rounded-lg hover:bg-surface-hover flex items-center justify-center"><X className="w-4 h-4" /></button>
+            </div>
+            <div className="space-y-2 max-h-[60vh] overflow-y-auto">
+              {editItems.map((it) => (
+                <div key={it.id} className="flex items-center gap-2 p-2 rounded-xl bg-background border border-border">
+                  <span className="flex-1 text-sm">{it.name}</span>
+                  <button onClick={() => setEditItems((p) => p.map((x) => x.id === it.id ? { ...x, qty: Math.max(0, x.qty - 1) } : x))} className="w-7 h-7 rounded-lg bg-surface-hover flex items-center justify-center">-</button>
+                  <span className="w-6 text-center text-sm font-mono">{it.qty}</span>
+                  <button onClick={() => setEditItems((p) => p.map((x) => x.id === it.id ? { ...x, qty: x.qty + 1 } : x))} className="w-7 h-7 rounded-lg bg-accent/10 text-accent flex items-center justify-center">+</button>
+                </div>
+              ))}
+              {editItems.length === 0 && <p className="text-sm text-text-muted text-center py-4">No items</p>}
+            </div>
+            <div className="flex gap-2 mt-4">
+              <button onClick={saveEdit} className="flex-1 py-2.5 rounded-xl bg-accent text-white font-semibold hover:bg-accent-hover">Save</button>
+              <button onClick={() => setEditing(null)} className="px-4 py-2.5 rounded-xl border border-border">Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <ConfirmDialog open={!!confirmDel} title={`Delete order #${confirmDel?.shortId}?`} description="Cancels order and frees table if no other active orders." onConfirm={handleDelete} onCancel={() => setConfirmDel(null)} />
     </div>
   );
 }

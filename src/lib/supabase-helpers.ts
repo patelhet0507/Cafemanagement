@@ -10,13 +10,15 @@ export function useSupabaseTable<T>(
   query?: (q: any) => any,
   deps: unknown[] = []
 ) {
-  const [data, setData] = useState<T[]>(mock);
+  // strict Supabase: when configured, pull ONLY from Supabase (empty => empty, not mocks)
+  const [data, setData] = useState<T[]>(isSupabaseConfigured ? [] : mock);
   const [loading, setLoading] = useState(isSupabaseConfigured);
   const [error, setError] = useState<string | null>(null);
 
   const fetch = useCallback(async () => {
     if (!isSupabaseConfigured) {
       setLoading(false);
+      setData(mock);
       return;
     }
     setLoading(true);
@@ -26,12 +28,11 @@ export function useSupabaseTable<T>(
       if (query) q = query(q);
       const { data: rows, error: err } = await q;
       if (err) throw err;
-      if (rows && rows.length > 0) setData(rows as unknown as T[]);
-      else setData(mock); // empty table → show mocks so UI not blank
+      setData((rows as unknown as T[]) ?? []);
       setError(null);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : String(e));
-      setData(mock);
+      setData([]);
     } finally {
       setLoading(false);
     }

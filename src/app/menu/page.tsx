@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useMemo, Suspense, useEffect, useCallback } from "react";
+import { useState, useMemo, Suspense, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { AnimatePresence } from "framer-motion";
-import { Coffee, ChevronRight, Bell, Package, Bike } from "lucide-react";
+import { Coffee, ChevronRight, Bike } from "lucide-react";
 import { mockMenuItems } from "@/lib/mock-data";
 import { MenuCard } from "@/components/menu/menu-card";
 import { CartBar } from "@/components/menu/cart-bar";
@@ -15,7 +15,6 @@ import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import type { MenuItem } from "@/types/database";
 
 const STORE_KEY = "cafeflow_customer_state";
-
 type Stored = { orderId: string; shortId: string; tableNumber: number; orderType: "dine_in" | "takeout"; total: number; status: string; notif: boolean };
 
 function MenuContent() {
@@ -31,6 +30,7 @@ function MenuContent() {
   const [orderTotal, setOrderTotal] = useState(0);
   const [orderId, setOrderId] = useState<string | null>(null);
   const [liveStatus, setLiveStatus] = useState<string | null>(null);
+  const prevRef = useRef<string | null>(null);
   const [notifOn, setNotifOn] = useState(false);
   const [placing, setPlacing] = useState(false);
   const [occupiedErr, setOccupiedErr] = useState<string | null>(null);
@@ -47,7 +47,6 @@ function MenuContent() {
     return menuItems.filter((item) => item.category === activeCategory);
   }, [menuItems, activeCategory]);
 
-  // hydrate from storage
   useEffect(() => {
     const raw = localStorage.getItem(STORE_KEY);
     if (raw) {
@@ -63,7 +62,6 @@ function MenuContent() {
     if (n === "1") setNotifOn(true);
   }, [tableNumber]);
 
-  // persist order
   useEffect(() => {
     if (orderPlaced && orderId) {
       const toSave: Stored = { orderId, shortId: orderId.slice(0, 4).toUpperCase(), tableNumber, orderType, total: orderTotal, status: liveStatus || "pending", notif: notifOn };
@@ -71,26 +69,44 @@ function MenuContent() {
     }
   }, [orderPlaced, orderId, tableNumber, orderType, orderTotal, liveStatus, notifOn]);
 
-  // live subscribe to order status
   useEffect(() => {
-    if (!orderId || !isSupabaseConfigured) return;
+    if (!orderId) return;
+    if (!isSupabaseConfigured && orderId.startsWith("mock_")) {
+      const t = setTimeout(() => {
+        setLiveStatus("ready");
+        if (notifOn && Notification.permission === "granted") {
+          new Notification(`Order ready — ${orderType === "takeout" ? "Takeout" : `Table ${String(tableNumber).padStart(2, "0")}`}`, { body: `Order #${orderId.slice(0, 6).toUpperCase()} ready — collect at counter` });
+          navigator.vibrate?.([200, 100, 200]);
+        }
+      }, 12000);
+      return () => clearTimeout(t);
+    }
+    if (!isSupabaseConfigured) return;
     const ch = supabase.channel(`customer-${orderId}`).on("postgres_changes", { event: "UPDATE", schema: "public", table: "orders", filter: `id=eq.${orderId}` }, (payload) => {
       const ns = (payload.new as { status: string }).status;
       setLiveStatus(ns);
-      localStorage.setItem(STORE_KEY, JSON.stringify({ orderId, shortId: orderId.slice(0, 4).toUpperCase(), tableNumber, orderType, total: orderTotal, status: ns, notif: notifOn }));
-      if (ns === "ready" && notifOn && Notification.permission === "granted") {
-        new Notification(`Order ready — Table ${String(tableNumber).padStart(2, "0")}`, { body: `Order #${orderId.slice(0, 4).toUpperCase()} ready — collect at counter` });
-        navigator.vibrate?.([200, 100, 200]);
-      }
     }).subscribe();
-    // also fetch once
     supabase.from("orders").select("status").eq("id", orderId).single().then(({ data }) => {
       if (data) setLiveStatus((data as { status: string }).status);
     });
     return () => { supabase.removeChannel(ch); };
-  }, [orderId, tableNumber, orderType, orderTotal, notifOn]);
+  }, [orderId]);
 
-  // occupied check for dine-in
+  useEffect(() => {
+    if (!orderId || !liveStatus) return;
+    localStorage.setItem(STORE_KEY, JSON.stringify({ orderId, shortId: orderId.slice(0, 4).toUpperCase(), tableNumber, orderType, total: orderTotal, status: liveStatus, notif: notifOn }));
+    if (liveStatus === "ready" && prevRef.current !== "ready" && notifOn) {
+      if (Notification.permission === "granted") {
+        new Notification(`Order ready — ${orderType === "takeout" ? "Takeout" : `Table ${String(tableNumber).padStart(2, "0")}`}`, { body: `Order #${orderId.slice(0, 4).toUpperCase()} ready — collect at counter`, icon: "/favicon.ico" });
+        navigator.vibrate?.([200, 100, 200]);
+        try { new Audio("/ding.mp3").play().catch(() => {}); } catch {}
+      } else if (Notification.permission !== "denied") {
+        Notification.requestPermission().then((p) => { if (p === "granted") new Notification(`Order ready!`); });
+      }
+    }
+    prevRef.current = liveStatus;
+  }, [liveStatus, orderId, tableNumber, orderType, orderTotal, notifOn]);
+
   useEffect(() => {
     if (orderType === "takeout" || !isSupabaseConfigured) { setOccupiedErr(null); return; }
     supabase.from("tables").select("status").eq("number", tableNumber).maybeSingle().then(({ data }) => {
@@ -104,7 +120,6 @@ function MenuContent() {
   const cartTotal = cart.reduce((sum, ci) => sum + ci.item.price * ci.quantity, 0);
 
   const addToCart = (item: MenuItem) => {
-    // allow note via prompt for now — CartSheet handles per-item note later
     setCart((prev) => {
       const existing = prev.find((ci) => ci.item.id === item.id);
       if (existing) return prev.map((ci) => ci.item.id === item.id ? { ...ci, quantity: ci.quantity + 1 } : ci);
@@ -118,7 +133,7 @@ function MenuContent() {
   };
 
   const updateNote = (itemId: string, note: string) => {
-    setCart((prev) => prev.map((ci) => ci.item.id === itemId ? { ...ci, note } : ci));
+    setCart((prev) => prev.map((ci) => ci.item.id === itemId ? { ...ci, note } : ci) as CartItem[]);
   };
 
   const placeOrder = async (total: number, method: "upi" | "counter" = "counter") => {
@@ -133,14 +148,12 @@ function MenuContent() {
           if (t) tableId = (t as { id: string }).id;
         } catch {}
       }
-      // if add-more mode and existing orderId, append items
       if (orderId && addMoreMode) {
         const addTotal = total;
         await addItemsToOrder(orderId, cart.map((c) => ({ id: c.item.id, price: c.item.price, quantity: c.quantity, note: (c as unknown as { note?: string }).note })), addTotal);
         const newTotal = orderTotal + addTotal;
         setOrderTotal(newTotal);
         setCart([]); setCartOpen(false); setAddMoreMode(false);
-        // update stored total
         const raw = localStorage.getItem(STORE_KEY);
         if (raw) { const s = JSON.parse(raw); s.total = newTotal; localStorage.setItem(STORE_KEY, JSON.stringify(s)); }
         mockSendWhatsApp("", getOrderConfirmationMessage(tableNumber, addTotal) + " (Added to order)");
@@ -167,7 +180,6 @@ function MenuContent() {
       setCartOpen(false);
       setOrderPlaced(true);
       setCart([]);
-      // occupy table now (if dine-in)
       if (orderType === "dine_in" && isSupabaseConfigured && tableId) {
         await supabase.from("tables").update({ status: "occupied" } as never).eq("id", tableId);
       }

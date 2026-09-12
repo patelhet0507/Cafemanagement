@@ -5,6 +5,8 @@ import { PageHeader } from "@/components/shared/page-header";
 import { cn } from "@/lib/utils";
 import { mockRecentOrders } from "@/lib/mock-data";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
+import { downloadCSV } from "@/lib/export";
+import { useToast } from "@/components/shared/toaster";
 import { Search, Filter, Download } from "lucide-react";
 
 const statusColors: Record<string, string> = {
@@ -15,6 +17,7 @@ const statusColors: Record<string, string> = {
 };
 
 export default function OrdersPage() {
+  const toast = useToast();
   const [orders, setOrders] = useState(mockRecentOrders);
   useEffect(() => {
     if (!isSupabaseConfigured) return;
@@ -29,7 +32,7 @@ export default function OrdersPage() {
   return (
     <div>
       <PageHeader title="Orders" description="View and manage all orders">
-        <button className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border text-sm hover:bg-surface-hover transition-colors">
+        <button onClick={() => { downloadCSV(`orders-${new Date().toISOString().slice(0,10)}.csv`, orders as unknown as Record<string, unknown>[]); toast("CSV downloaded"); }} className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border text-sm hover:bg-surface-hover transition-colors">
           <Download className="w-4 h-4" /> Export CSV
         </button>
       </PageHeader>
@@ -39,7 +42,7 @@ export default function OrdersPage() {
             <Search className="w-4 h-4 text-text-muted" />
             <input placeholder="Search orders..." className="bg-transparent text-sm outline-none flex-1" />
           </div>
-          <button className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-border text-sm text-text-secondary hover:bg-surface-hover">
+          <button onClick={() => toast("Filter coming soon — use search for now")} className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-border text-sm text-text-secondary hover:bg-surface-hover">
             <Filter className="w-3.5 h-3.5" /> Filter
           </button>
         </div>

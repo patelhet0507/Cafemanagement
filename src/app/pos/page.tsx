@@ -65,6 +65,17 @@ export default function POSPage() {
   const selected = selectedId ? tables.find((t) => t.id === selectedId) ?? null : null;
   const selectedOrder = selected ? orders.find((o) => o.table_id === selected.id) : null;
   const isPaid = selectedOrder?.payment_status === "paid";
+  const [orderItems, setOrderItems] = useState<Array<{ name: string; quantity: number; unit_price: number }>>([]);
+  useEffect(() => {
+    if (!selectedOrder || !isSupabaseConfigured) { setOrderItems([]); return; }
+    supabase.from("order_items").select("quantity, unit_price, menu_item_id").eq("order_id", selectedOrder.id).then(async ({ data }) => {
+      if (!data?.length) { setOrderItems([]); return; }
+      const ids = (data as { menu_item_id: string }[]).map((d) => d.menu_item_id);
+      const { data: menus } = await supabase.from("menu_items").select("id, name").in("id", ids);
+      const map = new Map((menus as { id: string; name: string }[] | null)?.map((m) => [m.id, m.name]) ?? []);
+      setOrderItems((data as { quantity: number; unit_price: number; menu_item_id: string }[]).map((d) => ({ name: map.get(d.menu_item_id) ?? "Item", quantity: d.quantity, unit_price: Number(d.unit_price) })));
+    });
+  }, [selectedOrder]);
 
   const stats = useMemo(
     () => ({
@@ -276,13 +287,14 @@ export default function POSPage() {
                   <>
                     <div className="rounded-xl border border-border overflow-hidden">
                       <div className="px-4 py-3 bg-background border-b border-border flex items-center justify-between">
-                        <span className="text-xs font-semibold tracking-widest text-text-muted">ORDER #{selectedOrder.id.toUpperCase()}</span>
+                        <span className="text-xs font-semibold tracking-widest text-text-muted">ORDER #{selectedOrder.id.slice(0, 6).toUpperCase()}</span>
                         <span className="text-xs px-2 py-0.5 rounded-full bg-info-bg text-info-text font-semibold capitalize">{selectedOrder.status}</span>
                       </div>
                       <div className="divide-y divide-border">
-                        <div className="px-4 py-3 flex justify-between text-sm"><span className="text-text-secondary">2× Cold Coffee</span><span className="font-mono font-medium">₹360</span></div>
-                        <div className="px-4 py-3 flex justify-between text-sm"><span className="text-text-secondary">1× Veg Sandwich</span><span className="font-mono font-medium">₹140</span></div>
-                        <div className="px-4 py-2.5 flex justify-between text-xs text-text-muted"><span>GST 5%</span><span className="font-mono">₹25</span></div>
+                        {orderItems.length ? orderItems.map((oi, i) => (
+                          <div key={i} className="px-4 py-3 flex justify-between text-sm"><span className="text-text-secondary">{oi.quantity}× {oi.name}</span><span className="font-mono font-medium">{formatCurrency(oi.unit_price * oi.quantity)}</span></div>
+                        )) : <div className="px-4 py-3 text-xs text-text-muted text-center">Loading items from menu_items… {isSupabaseConfigured ? "" : "(mock: 2× Cold Coffee)"}</div>}
+                        <div className="px-4 py-2.5 flex justify-between text-xs text-text-muted"><span>GST 5%</span><span className="font-mono">₹{Math.round(Number(selectedOrder.total) * 0.05 / 1.05)}</span></div>
                         <div className="px-4 py-3 flex justify-between font-semibold"><span>Total</span><span className="font-mono text-accent">{formatCurrency(selectedOrder.total)}</span></div>
                       </div>
                     </div>

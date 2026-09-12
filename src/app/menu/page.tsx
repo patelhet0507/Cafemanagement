@@ -28,7 +28,7 @@ function MenuContent() {
   const [placing, setPlacing] = useState(false);
 
   const { data: liveItems, loading: menuLoading } = useSupabaseTable<MenuItem>("menu_items", mockMenuItems, (q) => q.eq("is_available", true).order("category", { ascending: true }));
-  const menuItems = liveItems.length ? liveItems : mockMenuItems;
+  const menuItems = isSupabaseConfigured ? liveItems : mockMenuItems;
   const categories = useMemo(() => {
     const cats = Array.from(new Set(menuItems.map((m) => m.category)));
     return ["Recommended", ...cats];
@@ -44,19 +44,9 @@ function MenuContent() {
 
   const addToCart = (item: MenuItem) => {
     setCart((prev) => {
-      const wasEmpty = prev.length === 0;
-      const next = (() => {
-        const existing = prev.find((ci) => ci.item.id === item.id);
-        if (existing) return prev.map((ci) => ci.item.id === item.id ? { ...ci, quantity: ci.quantity + 1 } : ci);
-        return [...prev, { item, quantity: 1 }];
-      })();
-      if (wasEmpty && isSupabaseConfigured) {
-        // occupy table on first item added
-        import("@/lib/supabase").then(({ supabase }) => {
-          supabase.from("tables").update({ status: "occupied" } as never).eq("number", tableNumber).then(() => {});
-        });
-      }
-      return next;
+      const existing = prev.find((ci) => ci.item.id === item.id);
+      if (existing) return prev.map((ci) => ci.item.id === item.id ? { ...ci, quantity: ci.quantity + 1 } : ci);
+      return [...prev, { item, quantity: 1 }];
     });
   };
 
@@ -65,11 +55,10 @@ function MenuContent() {
     else setCart((prev) => prev.map((ci) => ci.item.id === itemId ? { ...ci, quantity } : ci));
   };
 
-  const placeOrder = async () => {
-    const total = cartTotal + Math.round(cartTotal * 0.05);
+  const placeOrder = async (total: number) => {
+    if (isSupabaseConfigured && menuItems.length === 0) { alert("Menu not seeded — add items in Dashboard → Menu"); return; }
     setPlacing(true);
     try {
-      // best-effort Supabase — never block confirmation
       if (isSupabaseConfigured) {
         try {
           let tableId: string | null = null;

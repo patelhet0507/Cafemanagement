@@ -8,14 +8,11 @@ import { Coffee, Maximize2 } from "lucide-react";
 type ReadyOrder = { id: string; shortId: string; table: number; time: string };
 
 export default function DisplayPage() {
-  const [orders, setOrders] = useState<ReadyOrder[]>([
-    { id: "demo1", shortId: "1042", table: 4, time: "18:42" },
-    { id: "demo2", shortId: "1041", table: 2, time: "18:35" },
-  ]);
+  const [orders, setOrders] = useState<ReadyOrder[]>([]);
 
   const fetchReady = useCallback(async () => {
     if (!isSupabaseConfigured) return;
-    const { data } = await supabase.from("orders").select("id, table_id, created_at").eq("status", "ready").order("created_at", { ascending: true }).limit(12);
+    const { data } = await supabase.from("orders").select("id, table_id, created_at, payment_status").eq("status", "ready").eq("payment_status", "unpaid").order("created_at", { ascending: true }).limit(12);
     if (!data?.length) { setOrders([]); return; }
     const { data: tables } = await supabase.from("tables").select("id, number");
     const tmap = new Map((tables as { id: string; number: number }[] | null)?.map((t) => [t.id, t.number]) ?? []);

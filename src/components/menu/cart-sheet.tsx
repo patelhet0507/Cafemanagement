@@ -16,7 +16,7 @@ interface CartSheetProps {
   onClose: () => void;
   items: CartItem[];
   onUpdateQuantity: (itemId: string, quantity: number) => void;
-  onPlaceOrder: () => void;
+  onPlaceOrder: (total: number) => void;
 }
 
 export function CartSheet({ open, onClose, items, onUpdateQuantity, onPlaceOrder }: CartSheetProps) {
@@ -119,7 +119,7 @@ export function CartSheet({ open, onClose, items, onUpdateQuantity, onPlaceOrder
                 </div>
               </div>
               <button
-                onClick={onPlaceOrder}
+                onClick={() => onPlaceOrder(total)}
                 className="w-full py-3.5 rounded-xl bg-accent text-white font-semibold hover:bg-accent-hover transition-colors"
               >
                 Place Order — {formatCurrency(total)}

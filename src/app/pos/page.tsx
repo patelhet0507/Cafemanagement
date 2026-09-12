@@ -28,7 +28,6 @@ export default function POSPage() {
   const [filter, setFilter] = useState<"all" | CafeTable["status"]>("all");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [payMethod, setPayMethod] = useState<string>("cash");
-  const [paid, setPaid] = useState<Set<string>>(new Set());
   const toast = useToast();
   const [showAdd, setShowAdd] = useState(false);
   const [editing, setEditing] = useState<CafeTable | null>(null);
@@ -46,17 +45,13 @@ export default function POSPage() {
     (q: any) => q.eq("payment_status", "unpaid").order("created_at", { ascending: false })
   );
 
-  // realtime unpaid orders
+  // realtime
   useEffect(() => {
     if (!isSupabaseConfigured) return;
-    const ch = supabase
-      .channel("pos-orders")
-      .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, () => refetchOrders())
-      .subscribe();
-    return () => {
-      supabase.removeChannel(ch);
-    };
-  }, [refetchOrders]);
+    const ch1 = supabase.channel("pos-orders").on("postgres_changes", { event: "*", schema: "public", table: "orders" }, () => refetchOrders()).subscribe();
+    const ch2 = supabase.channel("pos-tables").on("postgres_changes", { event: "*", schema: "public", table: "tables" }, () => refetchTables()).subscribe();
+    return () => { supabase.removeChannel(ch1); supabase.removeChannel(ch2); };
+  }, [refetchOrders, refetchTables]);
 
   useEffect(() => {
     if (!qrTable) { setQrDataUrl(""); return; }
@@ -69,7 +64,7 @@ export default function POSPage() {
   const filtered = useMemo(() => filter === "all" ? tables : tables.filter((t) => t.status === filter), [tables, filter]);
   const selected = selectedId ? tables.find((t) => t.id === selectedId) ?? null : null;
   const selectedOrder = selected ? orders.find((o) => o.table_id === selected.id) : null;
-  const isPaid = selected ? paid.has(selected.id) : false;
+  const isPaid = selectedOrder?.payment_status === "paid";
 
   const stats = useMemo(
     () => ({
@@ -82,12 +77,18 @@ export default function POSPage() {
 
   const markPaid = async () => {
     if (!selected || !selectedOrder) return;
-    if (isSupabaseConfigured) {
-      await supabase.from("orders").update({ payment_status: "paid", payment_method: payMethod, status: "paid" } as never).eq("id", selectedOrder.id);
-      await supabase.from("tables").update({ status: "available" } as never).eq("id", selected.id);
+    try {
+      if (isSupabaseConfigured) {
+        const { error: e1 } = await supabase.from("orders").update({ payment_status: "paid", payment_method: payMethod, status: "paid" } as never).eq("id", selectedOrder.id);
+        if (e1) throw e1;
+        const { error: e2 } = await supabase.from("tables").update({ status: "available" } as never).eq("id", selected.id);
+        if (e2) throw e2;
+      }
+      toast("Payment recorded"); setTimeout(() => setSelectedId(null), 600);
+    } catch (e) {
+      const m = (e as any)?.message ?? (e instanceof Error ? e.message : String(e));
+      toast(m.includes("schema cache") ? "Schema cache stale — run NOTIFY pgrst, 'reload schema';" : m, "error");
     }
-    setPaid((s) => new Set(s).add(selected.id));
-    setTimeout(() => setSelectedId(null), 600);
   };
 
   const openAdd = () => { const nextNum = tables.length ? Math.max(...tables.map((t) => t.number)) + 1 : 1; setEditing(null); setForm({ number: String(nextNum), name: `Table ${nextNum}`, capacity: "4", status: "available" }); setShowAdd(true); };
@@ -157,7 +158,7 @@ export default function POSPage() {
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 sm:gap-4">
           {filtered.map((table) => {
             const order = orders.find((o) => o.table_id === table.id);
-            const hasOrder = !!order && !paid.has(table.id);
+            const hasOrder = !!order;
             const cfg = statusConfig[hasOrder ? "occupied" : table.status] ?? statusConfig.available;
             const isSelected = selectedId === table.id;
             return (
@@ -172,20 +173,17 @@ export default function POSPage() {
                   </div>
                   <p className="mt-1 font-semibold leading-tight">{table.name}</p>
                   <p className="text-xs text-text-secondary flex items-center gap-1 mt-0.5"><Users className="w-3 h-3" /> {table.capacity} seats</p>
-                    <div className="mt-auto pt-3 space-y-1.5">
-                  {isPaid ? (
-                    <span className="inline-flex items-center gap-1 text-xs font-semibold text-success"><Check className="w-3.5 h-3.5" /> Paid</span>
-                  ) : hasOrder ? (
-                    <div>
-                      <p className="text-sm font-mono font-semibold text-accent">{formatCurrency(order.total)}</p>
-                      <p className="text-[11px] text-text-muted flex items-center gap-1"><Clock className="w-3 h-3" /> 18 min · 2 items</p>
-                    </div>
-                  ) : (
-                    <span className={cn("inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold tracking-wide", cfg.bg, "border", cfg.border)}>{cfg.label}</span>
-                  )}
-                  <button onClick={(e) => { e.stopPropagation(); setQrTable(table); }} className="w-full flex items-center justify-center gap-1 py-1 rounded-lg bg-accent/10 text-accent text-[11px] font-semibold hover:bg-accent hover:text-white transition-colors"><QrCode className="w-3 h-3" /> Show QR</button>
-                </div>
-              </button>
+                  <div className="mt-auto pt-3">
+                    {hasOrder ? (
+                      <div>
+                        <p className="text-sm font-mono font-semibold text-accent">{formatCurrency(order.total)}</p>
+                        <p className="text-[11px] text-text-muted flex items-center gap-1"><Clock className="w-3 h-3" /> 18 min · 2 items</p>
+                      </div>
+                    ) : (
+                      <span className={cn("inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold tracking-wide", cfg.bg, "border", cfg.border)}>{cfg.label}</span>
+                    )}
+                  </div>
+                </button>
                 <div className="absolute top-1 right-1 hidden group-hover:flex gap-1">
                   <button onClick={(e) => { e.stopPropagation(); setQrTable(table); }} className="w-6 h-6 rounded-lg bg-accent text-white flex items-center justify-center hover:bg-accent-hover" title="Show QR"><QrCode className="w-3 h-3" /></button>
                   <button onClick={(e) => { e.stopPropagation(); openEdit(table); }} className="w-6 h-6 rounded-lg bg-surface border border-border flex items-center justify-center hover:bg-surface-hover"><Pencil className="w-3 h-3" /></button>

@@ -5,7 +5,7 @@ import { cn, formatCurrency } from "@/lib/utils";
 import { mockTables, mockOrders } from "@/lib/mock-data";
 import { useSupabaseTable } from "@/lib/supabase-helpers";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
-import { Clock, X, CreditCard, Banknote, Smartphone, Check, Users, UtensilsCrossed, Pencil, Trash2, Settings2 } from "lucide-react";
+import { Clock, X, CreditCard, Banknote, Smartphone, Check, Users, UtensilsCrossed, Pencil, Trash2, Settings2, QrCode, Printer, Coffee } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import type { CafeTable, Order } from "@/types/database";
@@ -35,6 +35,8 @@ export default function POSPage() {
   const [form, setForm] = useState({ number: "", name: "", capacity: "4", status: "available" as CafeTable["status"] });
   const [saving, setSaving] = useState(false);
   const [confirmDel, setConfirmDel] = useState<CafeTable | null>(null);
+  const [qrTable, setQrTable] = useState<CafeTable | null>(null);
+  const [qrDataUrl, setQrDataUrl] = useState<string>("");
 
   const { data: tables, refetch: refetchTables } = useSupabaseTable<CafeTable>("tables", mockTables);
   const { data: orders, refetch: refetchOrders } = useSupabaseTable<Order>(
@@ -55,6 +57,14 @@ export default function POSPage() {
       supabase.removeChannel(ch);
     };
   }, [refetchOrders]);
+
+  useEffect(() => {
+    if (!qrTable) { setQrDataUrl(""); return; }
+    const url = `${typeof window !== "undefined" ? window.location.origin : ""}/menu?table=${qrTable.number}`;
+    import("qrcode").then(({ default: QRCode }) => {
+      QRCode.toDataURL(url, { width: 280, margin: 1, color: { dark: "#1C1917", light: "#FFFFFF" } }).then(setQrDataUrl).catch(() => setQrDataUrl(""));
+    });
+  }, [qrTable]);
 
   const filtered = useMemo(() => filter === "all" ? tables : tables.filter((t) => t.status === filter), [tables, filter]);
   const selected = selectedId ? tables.find((t) => t.id === selectedId) ?? null : null;
@@ -88,16 +98,21 @@ export default function POSPage() {
     setSaving(true);
     try {
       const payload = { number: Number(form.number), name: form.name, capacity: Number(form.capacity), status: form.status };
+      let newTable: CafeTable | null = null;
       if (editing) {
         const { error } = await supabase.from("tables").update(payload as never).eq("id", editing.id);
         if (error) throw error;
         toast("Table updated");
+        newTable = { ...editing, ...payload } as CafeTable;
       } else {
-        const { error } = await supabase.from("tables").insert(payload as never);
+        const { data, error } = await supabase.from("tables").insert(payload as never).select("*").single();
         if (error) throw error;
         toast("Table added");
+        newTable = data as unknown as CafeTable;
+        if (!newTable) newTable = { id: `tmp-${payload.number}`, ...payload } as CafeTable;
       }
       setShowAdd(false); refetchTables();
+      if (newTable) setQrTable(newTable);
     } catch (e) { const m = (e as any)?.message ?? (e instanceof Error ? e.message : String(e)); toast(m.includes("duplicate") ? "Table number already exists" : m, "error"); } finally { setSaving(false); }
   };
   const deleteTable = async () => {
@@ -157,20 +172,22 @@ export default function POSPage() {
                   </div>
                   <p className="mt-1 font-semibold leading-tight">{table.name}</p>
                   <p className="text-xs text-text-secondary flex items-center gap-1 mt-0.5"><Users className="w-3 h-3" /> {table.capacity} seats</p>
-                  <div className="mt-auto pt-3">
-                    {isPaid ? (
-                      <span className="inline-flex items-center gap-1 text-xs font-semibold text-success"><Check className="w-3.5 h-3.5" /> Paid</span>
-                    ) : hasOrder ? (
-                      <div>
-                        <p className="text-sm font-mono font-semibold text-accent">{formatCurrency(order.total)}</p>
-                        <p className="text-[11px] text-text-muted flex items-center gap-1"><Clock className="w-3 h-3" /> 18 min · 2 items</p>
-                      </div>
-                    ) : (
-                      <span className={cn("inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold tracking-wide", cfg.bg, "border", cfg.border)}>{cfg.label}</span>
-                    )}
-                  </div>
-                </button>
+                    <div className="mt-auto pt-3 space-y-1.5">
+                  {isPaid ? (
+                    <span className="inline-flex items-center gap-1 text-xs font-semibold text-success"><Check className="w-3.5 h-3.5" /> Paid</span>
+                  ) : hasOrder ? (
+                    <div>
+                      <p className="text-sm font-mono font-semibold text-accent">{formatCurrency(order.total)}</p>
+                      <p className="text-[11px] text-text-muted flex items-center gap-1"><Clock className="w-3 h-3" /> 18 min · 2 items</p>
+                    </div>
+                  ) : (
+                    <span className={cn("inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold tracking-wide", cfg.bg, "border", cfg.border)}>{cfg.label}</span>
+                  )}
+                  <button onClick={(e) => { e.stopPropagation(); setQrTable(table); }} className="w-full flex items-center justify-center gap-1 py-1 rounded-lg bg-accent/10 text-accent text-[11px] font-semibold hover:bg-accent hover:text-white transition-colors"><QrCode className="w-3 h-3" /> Show QR</button>
+                </div>
+              </button>
                 <div className="absolute top-1 right-1 hidden group-hover:flex gap-1">
+                  <button onClick={(e) => { e.stopPropagation(); setQrTable(table); }} className="w-6 h-6 rounded-lg bg-accent text-white flex items-center justify-center hover:bg-accent-hover" title="Show QR"><QrCode className="w-3 h-3" /></button>
                   <button onClick={(e) => { e.stopPropagation(); openEdit(table); }} className="w-6 h-6 rounded-lg bg-surface border border-border flex items-center justify-center hover:bg-surface-hover"><Pencil className="w-3 h-3" /></button>
                   <button onClick={(e) => { e.stopPropagation(); setConfirmDel(table); }} className="w-6 h-6 rounded-lg bg-surface border border-border flex items-center justify-center hover:bg-error/10 text-error"><Trash2 className="w-3 h-3" /></button>
                 </div>
@@ -203,6 +220,30 @@ export default function POSPage() {
         </div>
       )}
       <ConfirmDialog open={!!confirmDel} title={`Delete ${confirmDel?.name}?`} description="Removes table permanently." onConfirm={deleteTable} onCancel={() => setConfirmDel(null)} />
+
+      {qrTable && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={() => setQrTable(null)}>
+          <div className="w-full max-w-sm bg-surface rounded-[24px] shadow-2xl overflow-hidden" onClick={(e) => e.stopPropagation()} id="qr-print-area">
+            <div className="bg-primary text-white px-6 py-5 text-center">
+              <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center mx-auto"><Coffee className="w-5 h-5" /></div>
+              <h3 className="font-serif text-xl font-semibold mt-2">CafeFlow</h3>
+              <p className="text-xs tracking-widest opacity-70">SCAN TO ORDER</p>
+            </div>
+            <div className="p-6 text-center">
+              <div className="w-[220px] h-[220px] mx-auto rounded-2xl border-2 border-border p-3 bg-white flex items-center justify-center">
+                {qrDataUrl ? <img src={qrDataUrl} alt="QR" className="w-full h-full" /> : <span className="text-xs text-text-muted">Generating…</span>}
+              </div>
+              <h4 className="font-bold text-lg mt-4">Table {String(qrTable.number).padStart(2, "0")} — {qrTable.name}</h4>
+              <p className="text-xs text-text-muted mt-1">{qrTable.capacity} seats • Scan to view menu & order</p>
+              <p className="text-[11px] font-mono bg-surface-hover border border-border rounded-full inline-block px-3 py-1 mt-3">{typeof window !== "undefined" ? window.location.origin : ""}/menu?table={qrTable.number}</p>
+            </div>
+            <div className="flex gap-2 p-4 border-t border-border bg-background">
+              <button onClick={() => { const el = document.getElementById("qr-print-area"); if (!el) return; const w = window.open("", "_blank"); if (!w) return; w.document.write(`<html><head><title>Table ${qrTable.number} QR</title><style>body{font-family:system-ui;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#FDFBF7} .card{background:white;border-radius:24px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.15);max-width:380px;width:100%}</style></head><body><div class="card">${el.innerHTML}</div></body></html>`); w.document.close(); setTimeout(() => w.print(), 300); }} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-accent text-white font-semibold hover:bg-accent-hover"><Printer className="w-4 h-4" /> Print QR</button>
+              <button onClick={() => setQrTable(null)} className="px-4 py-2.5 rounded-xl border border-border text-sm font-medium hover:bg-surface-hover">Close</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Selected drawer */}
       <AnimatePresence>

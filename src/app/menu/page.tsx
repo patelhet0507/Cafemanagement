@@ -18,6 +18,7 @@ import type { MenuItem } from "@/types/database";
 function MenuContent() {
   const searchParams = useSearchParams();
   const tableNumber = parseInt(searchParams.get("table") || "1");
+  const isDemo = searchParams.get("demo") === "1";
 
   const [phone, setPhone] = useState<string | null>(null);
   const [activeCategory, setActiveCategory] = useState("Recommended");
@@ -27,7 +28,8 @@ function MenuContent() {
   const [orderTotal, setOrderTotal] = useState(0);
   const [placing, setPlacing] = useState(false);
 
-  const { data: menuItems, loading: menuLoading } = useSupabaseTable<MenuItem>("menu_items", mockMenuItems, (q) => q.eq("is_available", true).order("category", { ascending: true }));
+  const { data: liveItems, loading: menuLoading } = useSupabaseTable<MenuItem>("menu_items", mockMenuItems, (q) => q.eq("is_available", true).order("category", { ascending: true }));
+  const menuItems = isDemo ? mockMenuItems : liveItems;
   const categories = useMemo(() => {
     const cats = Array.from(new Set(menuItems.map((m) => m.category)));
     return ["Recommended", ...cats];

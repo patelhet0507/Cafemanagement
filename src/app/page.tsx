@@ -34,7 +34,7 @@ export default function LandingPage() {
               tells you what to reorder before you run out.
             </p>
             <div className="flex flex-wrap items-center gap-3 mt-8">
-              <Link href="/menu?table=1" className="inline-flex items-center gap-2 px-6 py-3.5 rounded-full bg-accent text-white font-semibold hover:bg-accent-hover transition-colors shadow-sm">
+              <Link href="/menu?table=1&demo=1" className="inline-flex items-center gap-2 px-6 py-3.5 rounded-full bg-accent text-white font-semibold hover:bg-accent-hover transition-colors shadow-sm">
                 Try Customer Menu <ArrowRight className="w-4 h-4" />
               </Link>
               <Link href="/scan" className="inline-flex items-center gap-2 px-5 py-3.5 rounded-full border border-border bg-surface font-medium hover:bg-surface-hover transition-colors">
@@ -105,7 +105,7 @@ export default function LandingPage() {
                 <li>• WhatsApp confirmation, KOT to kitchen</li>
                 <li>• Works on any phone — no app install</li>
               </ul>
-              <Link href="/menu?table=1" className="mt-6 inline-flex items-center gap-1.5 text-sm font-semibold text-white underline underline-offset-4 decoration-white/30 hover:decoration-white">Open customer menu →</Link>
+              <Link href="/menu?table=1&demo=1" className="mt-6 inline-flex items-center gap-1.5 text-sm font-semibold text-white underline underline-offset-4 decoration-white/30 hover:decoration-white">Open customer menu →</Link>
             </div>
             <div className="grid grid-rows-2 gap-6">
               <div className="rounded-[24px] border border-border bg-surface p-7">

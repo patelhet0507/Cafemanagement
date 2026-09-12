@@ -53,10 +53,11 @@ const isUuid = (s: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-
 export async function placeSupabaseOrder(args: {
   tableId: string | null;
   customerPhone: string | null;
-  items: { id: string; price: number; quantity: number }[];
+  items: { id: string; price: number; quantity: number; note?: string }[];
   total: number;
   paymentMethod?: string | null;
   paymentStatus?: "paid" | "unpaid";
+  orderType?: "dine_in" | "takeout";
 }) {
   if (!clientRateLimit(`order:${args.customerPhone ?? "anon"}`, 10, 60_000)) throw new Error("Rate limited — slow down");
   if (!isSupabaseConfigured) return { id: `mock_${Date.now()}`, mocked: true };
@@ -87,6 +88,7 @@ export async function placeSupabaseOrder(args: {
       total: args.total,
       payment_status: args.paymentStatus ?? "unpaid",
       payment_method: args.paymentMethod ?? null,
+      order_type: args.orderType ?? (validTableId ? "dine_in" : "takeout"),
     } as never)
     .select("id")
     .single();
@@ -103,6 +105,7 @@ export async function placeSupabaseOrder(args: {
       quantity: it.quantity,
       unit_price: it.price,
       status: "pending",
+      modifiers: (it as { note?: string }).note ? { note: (it as { note?: string }).note } : null,
     }));
     const { error: iErr } = await supabase.from("order_items").insert(rows as never);
     if (iErr) console.warn("order_items insert skipped (FK/mock ids):", iErr.message);
@@ -133,4 +136,18 @@ export async function placeSupabaseOrder(args: {
   }
 
   return { id: orderId, mocked: false };
+}
+
+export async function addItemsToOrder(orderId: string, items: { id: string; price: number; quantity: number; note?: string }[], totalAdd: number) {
+  if (!isSupabaseConfigured) return;
+  if (!isUuid(orderId)) return;
+  const validItems = items.filter((it) => isUuid(it.id));
+  if (!validItems.length) return;
+  const rows = validItems.map((it) => ({ order_id: orderId, menu_item_id: it.id, quantity: it.quantity, unit_price: it.price, status: "pending", modifiers: it.note ? { note: it.note } : null }));
+  const { error } = await supabase.from("order_items").insert(rows as never);
+  if (error) throw error;
+  // bump total
+  const { data: cur } = await supabase.from("orders").select("total").eq("id", orderId).single();
+  const curTotal = Number((cur as { total: number } | null)?.total ?? 0);
+  await supabase.from("orders").update({ total: curTotal + totalAdd } as never).eq("id", orderId);
 }

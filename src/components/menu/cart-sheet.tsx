@@ -10,6 +10,7 @@ import { useUpiQr } from "@/lib/settings";
 export interface CartItem {
   item: MenuItem;
   quantity: number;
+  note?: string;
 }
 
 interface CartSheetProps {
@@ -17,10 +18,11 @@ interface CartSheetProps {
   onClose: () => void;
   items: CartItem[];
   onUpdateQuantity: (itemId: string, quantity: number) => void;
+  onUpdateNote?: (itemId: string, note: string) => void;
   onPlaceOrder: (total: number, method: "upi" | "counter") => void;
 }
 
-export function CartSheet({ open, onClose, items, onUpdateQuantity, onPlaceOrder }: CartSheetProps) {
+export function CartSheet({ open, onClose, items, onUpdateQuantity, onUpdateNote, onPlaceOrder }: CartSheetProps) {
   const upiQr = useUpiQr();
   const [coupon, setCoupon] = useState("");
   const [showUpi, setShowUpi] = useState(false);
@@ -75,28 +77,31 @@ export function CartSheet({ open, onClose, items, onUpdateQuantity, onPlaceOrder
               </div>
             ) : (
               items.map((ci) => (
-                <div key={ci.item.id} className="flex items-center gap-3 p-3 rounded-xl bg-background border border-border">
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium truncate">{ci.item.name}</p>
-                    <p className="text-xs text-accent font-mono font-semibold mt-0.5">
-                      {formatCurrency(ci.item.price)}
-                    </p>
+                <div key={ci.item.id} className="flex flex-col gap-2 p-3 rounded-xl bg-background border border-border">
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{ci.item.name}</p>
+                      <p className="text-xs text-accent font-mono font-semibold mt-0.5">
+                        {formatCurrency(ci.item.price)}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => onUpdateQuantity(ci.item.id, ci.quantity - 1)}
+                        className="w-8 h-8 rounded-lg bg-surface-hover flex items-center justify-center hover:bg-error/10 hover:text-error transition-colors"
+                      >
+                        {ci.quantity === 1 ? <Trash2 className="w-3.5 h-3.5" /> : <Minus className="w-3.5 h-3.5" />}
+                      </button>
+                      <span className="w-8 text-center text-sm font-semibold font-mono">{ci.quantity}</span>
+                      <button
+                        onClick={() => onUpdateQuantity(ci.item.id, ci.quantity + 1)}
+                        className="w-8 h-8 rounded-lg bg-accent/10 text-accent flex items-center justify-center hover:bg-accent hover:text-white transition-colors"
+                      >
+                        <Plus className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1.5">
-                    <button
-                      onClick={() => onUpdateQuantity(ci.item.id, ci.quantity - 1)}
-                      className="w-8 h-8 rounded-lg bg-surface-hover flex items-center justify-center hover:bg-error/10 hover:text-error transition-colors"
-                    >
-                      {ci.quantity === 1 ? <Trash2 className="w-3.5 h-3.5" /> : <Minus className="w-3.5 h-3.5" />}
-                    </button>
-                    <span className="w-8 text-center text-sm font-semibold font-mono">{ci.quantity}</span>
-                    <button
-                      onClick={() => onUpdateQuantity(ci.item.id, ci.quantity + 1)}
-                      className="w-8 h-8 rounded-lg bg-accent/10 text-accent flex items-center justify-center hover:bg-accent hover:text-white transition-colors"
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
+                  <input value={(ci as { note?: string }).note || ""} onChange={(e) => onUpdateNote?.(ci.item.id, e.target.value)} placeholder="Note: e.g. extra spicy, no onion" className="w-full px-2.5 py-1.5 rounded-lg border border-border bg-surface text-xs outline-none focus:border-accent" />
                 </div>
               ))
             )}

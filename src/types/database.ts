@@ -56,14 +56,17 @@ export interface Customer {
   last_visit: string;
 }
 
+export type OrderType = "dine_in" | "takeout";
+
 export interface Order {
   id: string;
-  table_id: string;
+  table_id: string | null;
   customer_id: string | null;
   status: OrderStatus;
   total: number;
   payment_method: string | null;
   payment_status: PaymentStatus;
+  order_type: OrderType;
   created_at: string;
 }
 
@@ -73,7 +76,7 @@ export interface OrderItem {
   menu_item_id: string;
   quantity: number;
   unit_price: number;
-  modifiers: Record<string, number> | null;
+  modifiers: Record<string, unknown> | null;
   status: OrderStatus;
 }
 

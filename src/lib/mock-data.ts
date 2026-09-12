@@ -84,9 +84,9 @@ export const mockRecipes: Recipe[] = [
 ];
 
 export const mockOrders: Order[] = [
-  { id: "o1", table_id: "t2", customer_id: "c1", status: "preparing", total: 450, payment_method: null, payment_status: "unpaid", created_at: new Date(Date.now() - 18 * 60000).toISOString() },
-  { id: "o2", table_id: "t4", customer_id: "c2", status: "confirmed", total: 360, payment_method: null, payment_status: "unpaid", created_at: new Date(Date.now() - 12 * 60000).toISOString() },
-  { id: "o3", table_id: "t6", customer_id: "c3", status: "pending", total: 620, payment_method: null, payment_status: "unpaid", created_at: new Date(Date.now() - 5 * 60000).toISOString() },
+  { id: "o1", table_id: "t2", customer_id: "c1", status: "preparing", total: 450, payment_method: null, payment_status: "unpaid", order_type: "dine_in", created_at: new Date(Date.now() - 18 * 60000).toISOString() },
+  { id: "o2", table_id: "t4", customer_id: "c2", status: "confirmed", total: 360, payment_method: null, payment_status: "unpaid", order_type: "dine_in", created_at: new Date(Date.now() - 12 * 60000).toISOString() },
+  { id: "o3", table_id: "t6", customer_id: "c3", status: "pending", total: 620, payment_method: null, payment_status: "unpaid", order_type: "dine_in", created_at: new Date(Date.now() - 5 * 60000).toISOString() },
 ];
 
 export const mockCustomers: Customer[] = [

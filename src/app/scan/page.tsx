@@ -12,9 +12,18 @@ export default function ScanPage() {
   const [scanning, setScanning] = useState(false);
   const scannerRef = useRef<{ clear: () => Promise<void> } | null>(null);
 
-  const goTable = (n: string) => {
+  const goTable = async (n: string) => {
     const num = parseInt(n);
     if (!num || num < 1 || num > 100) { setError("Enter table 1-100"); return; }
+    // occupied check for dine-in
+    try {
+      const { supabase } = await import("@/lib/supabase");
+      const { data } = await supabase.from("tables").select("status").eq("number", num).maybeSingle();
+      if ((data as { status: string } | null)?.status === "occupied") {
+        setError(`Table ${String(num).padStart(2, "0")} is occupied — ask staff or choose another table.`);
+        return;
+      }
+    } catch {}
     router.push(`/menu?table=${num}`);
   };
 

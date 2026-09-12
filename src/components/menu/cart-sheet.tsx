@@ -1,7 +1,8 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Minus, Plus, ShoppingBag, Trash2 } from "lucide-react";
+import { useState } from "react";
+import { X, Minus, Plus, ShoppingBag, Trash2, Tag } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import type { MenuItem } from "@/types/database";
 
@@ -19,9 +20,14 @@ interface CartSheetProps {
 }
 
 export function CartSheet({ open, onClose, items, onUpdateQuantity, onPlaceOrder }: CartSheetProps) {
+  const [coupon, setCoupon] = useState("");
+  const couponDiscount = coupon.toUpperCase() === "WELCOME10" ? Math.round((items.reduce((s, ci) => s + ci.item.price * ci.quantity, 0)) * 0.1) : 0;
   const subtotal = items.reduce((sum, ci) => sum + ci.item.price * ci.quantity, 0);
   const tax = Math.round(subtotal * 0.05);
-  const total = subtotal + tax;
+  const isHappyHour = new Date().getHours() >= 15 && new Date().getHours() < 17;
+  const happyDiscount = isHappyHour ? Math.round(subtotal * 0.15) : 0;
+  const points = Math.floor(subtotal / 10);
+  const total = subtotal + tax - happyDiscount - couponDiscount;
 
   if (!open) return null;
 
@@ -104,6 +110,9 @@ export function CartSheet({ open, onClose, items, onUpdateQuantity, onPlaceOrder
                   <span>GST (5%)</span>
                   <span className="font-mono">{formatCurrency(tax)}</span>
                 </div>
+                {isHappyHour && <div className="flex justify-between text-success font-medium"><span>Happy Hour -15%</span><span className="font-mono">-{formatCurrency(happyDiscount)}</span></div>}
+                <div className="flex items-center gap-2 py-1"><Tag className="w-3.5 h-3.5 text-text-muted" /><input value={coupon} onChange={(e) => setCoupon(e.target.value)} placeholder="Coupon WELCOME10" className="flex-1 px-2 py-1 rounded-lg border border-border bg-background text-xs outline-none" /><span className="text-xs font-mono text-success">{couponDiscount ? `-${formatCurrency(couponDiscount)}` : ""}</span></div>
+                <div className="flex justify-between text-accent text-xs"><span>Loyalty</span><span className="font-mono">{points} pts (₹{points}) off next</span></div>
                 <div className="flex justify-between font-semibold text-base pt-1.5 border-t border-border">
                   <span>Total</span>
                   <span className="font-mono">{formatCurrency(total)}</span>

@@ -81,7 +81,7 @@ export default function ScanPage() {
     <div className="min-h-screen bg-background flex flex-col">
       <nav className="h-14 flex items-center justify-between px-6 border-b border-border bg-surface/80 backdrop-blur">
         <Link href="/" className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-xl bg-primary text-white flex items-center justify-center"><Coffee className="w-4 h-4" /></div>
+          <div className="w-8 h-8 rounded-xl bg-accent text-white flex items-center justify-center"><Coffee className="w-4 h-4" /></div>
           <span className="font-semibold">CafeFlow</span>
           <span className="text-[11px] tracking-widest bg-surface-hover border border-border px-2 py-0.5 rounded-full text-text-muted hidden sm:inline">QR SCAN</span>
         </Link>

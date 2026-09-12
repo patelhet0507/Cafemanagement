@@ -9,10 +9,10 @@ import { useAuth } from "@/components/auth/auth-provider";
 import { DEMO_USERS, type StaffRole } from "@/lib/auth";
 
 const roles: { id: StaffRole; label: string; icon: typeof Shield; desc: string; color: string }[] = [
-  { id: "owner", label: "Owner", icon: Crown, desc: "Full access", color: "bg-primary text-white" },
+  { id: "owner", label: "Owner", icon: Crown, desc: "Full access", color: "bg-accent text-white" },
   { id: "manager", label: "Manager", icon: Shield, desc: "Ops + Reports", color: "bg-accent text-white" },
-  { id: "chef", label: "Chef", icon: ChefHat, desc: "Kitchen only", color: "bg-info text-white" },
-  { id: "cashier", label: "Cashier", icon: Wallet, desc: "POS only", color: "bg-success text-white" },
+  { id: "chef", label: "Chef", icon: ChefHat, desc: "Kitchen only", color: "bg-accent text-white" },
+  { id: "cashier", label: "Cashier", icon: Wallet, desc: "POS only", color: "bg-accent text-white" },
 ];
 
 function LoginInner() {
@@ -81,7 +81,7 @@ function LoginInner() {
       {/* top nav minimal */}
       <nav className="absolute top-0 inset-x-0 z-20 h-14 flex items-center justify-between px-6 lg:px-8">
         <Link href="/" className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-primary text-white flex items-center justify-center"><Coffee className="w-4 h-4" /></div>
+          <div className="w-8 h-8 rounded-xl bg-accent text-white flex items-center justify-center"><Coffee className="w-4 h-4" /></div>
           <span className="font-semibold tracking-tight">CafeFlow</span>
           <span className="hidden sm:inline text-[10px] tracking-widest font-semibold border border-border rounded-full px-2 py-0.5 text-text-muted">STAFF ACCESS</span>
         </Link>
@@ -158,7 +158,7 @@ function LoginInner() {
                 </div>
               </label>
               {err && <p role="alert" className="text-xs font-medium text-error bg-error-bg border border-error/20 rounded-xl px-3 py-2">{err}</p>}
-              <button disabled={loading} className="w-full py-3.5 rounded-xl bg-primary text-white font-semibold hover:bg-primary-hover transition-colors flex items-center justify-center gap-2 disabled:opacity-50">
+              <button disabled={loading} className="w-full py-3.5 rounded-xl bg-accent text-white font-semibold hover:bg-accent-hover transition-colors flex items-center justify-center gap-2 disabled:opacity-50">
                 {loading ? "Signing in…" : <>Sign in <ArrowRight className="w-4 h-4" /></>}
               </button>
               <p className="text-[11px] text-text-muted text-center">Demo: click a role pill to autofill. Customers never see this — they scan QR at table.</p>

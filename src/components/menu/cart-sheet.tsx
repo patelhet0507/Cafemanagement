@@ -128,7 +128,7 @@ export function CartSheet({ open, onClose, items, onUpdateQuantity, onUpdateNote
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-2">
-                <button onClick={() => setShowUpi(true)} className="flex items-center justify-center gap-1.5 py-3 rounded-xl bg-primary text-white font-semibold hover:bg-primary-hover text-sm"><Smartphone className="w-4 h-4" /> Pay Now</button>
+                <button onClick={() => setShowUpi(true)} className="flex items-center justify-center gap-1.5 py-3 rounded-xl bg-accent text-white font-semibold hover:bg-accent-hover text-sm"><Smartphone className="w-4 h-4" /> Pay Now</button>
                 <button onClick={() => onPlaceOrder(total, "counter")} className="flex items-center justify-center gap-1.5 py-3 rounded-xl border border-border bg-surface font-semibold hover:bg-surface-hover text-sm"><Banknote className="w-4 h-4" /> At Counter</button>
               </div>
               <p className="text-[11px] text-center text-text-muted">Pay Now shows UPI QR • At Counter pay when collecting</p>
@@ -140,7 +140,7 @@ export function CartSheet({ open, onClose, items, onUpdateQuantity, onUpdateNote
       {showUpi && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setShowUpi(false)}>
           <div className="w-full max-w-sm bg-surface rounded-2xl shadow-2xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
-            <div className="bg-primary text-white px-6 py-4 text-center">
+            <div className="bg-accent text-white px-6 py-4 text-center">
               <h3 className="font-semibold">Pay Now — UPI</h3>
               <p className="text-xs opacity-80">Scan QR to pay {formatCurrency(total)}</p>
             </div>
@@ -152,7 +152,7 @@ export function CartSheet({ open, onClose, items, onUpdateQuantity, onUpdateNote
               <p className="text-xs text-text-muted mt-1">After payment, tap Confirm</p>
             </div>
             <div className="flex gap-2 p-4 border-t border-border">
-              <button onClick={() => { setShowUpi(false); onPlaceOrder(total, "upi"); }} className="flex-1 py-2.5 rounded-xl bg-success text-white font-semibold hover:bg-success/90">I’ve Paid — Confirm</button>
+              <button onClick={() => { setShowUpi(false); onPlaceOrder(total, "upi"); }} className="flex-1 py-2.5 rounded-xl bg-accent text-white font-semibold hover:bg-accent-hover">I’ve Paid — Confirm</button>
               <button onClick={() => setShowUpi(false)} className="px-4 py-2.5 rounded-xl border border-border text-sm">Cancel</button>
             </div>
           </div>

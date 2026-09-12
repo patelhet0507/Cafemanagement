@@ -145,7 +145,7 @@ export default function POSPage() {
           <span className="text-text-muted">{stats.occ} occupied · {stats.avail} free · {stats.total} total</span>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={openAdd} className="px-3 py-1.5 rounded-lg bg-primary text-white text-xs font-medium hover:bg-primary-hover flex items-center gap-1"><Settings2 className="w-3.5 h-3.5" /> Add Table</button>
+          <button onClick={openAdd} className="px-3 py-1.5 rounded-lg bg-accent text-white text-xs font-medium hover:bg-accent-hover flex items-center gap-1"><Settings2 className="w-3.5 h-3.5" /> Add Table</button>
           <Link href="/kitchen" className="px-3 py-1.5 rounded-lg bg-accent text-white text-xs font-medium hover:bg-accent-hover transition-colors">Kitchen →</Link>
         </div>
       </div>
@@ -156,7 +156,7 @@ export default function POSPage() {
             {(["all", "available", "occupied", "reserved"] as const).map(f => (
               <button key={f} onClick={() => setFilter(f)}
                 className={cn("px-3.5 py-1.5 rounded-full text-xs font-medium border transition-colors capitalize",
-                  filter === f ? "bg-primary text-white border-primary" : "bg-surface border-border text-text-secondary hover:bg-surface-hover")}>
+                  filter === f ? "bg-accent text-white border-primary" : "bg-surface border-border text-text-secondary hover:bg-surface-hover")}>
                 {f}
               </button>
             ))}
@@ -238,7 +238,7 @@ export default function POSPage() {
       {qrTable && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" onClick={() => setQrTable(null)}>
           <div className="w-full max-w-sm bg-surface rounded-[24px] shadow-2xl overflow-hidden" onClick={(e) => e.stopPropagation()} id="qr-print-area">
-            <div className="bg-primary text-white px-6 py-5 text-center">
+            <div className="bg-accent text-white px-6 py-5 text-center">
               <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center mx-auto"><Coffee className="w-5 h-5" /></div>
               <h3 className="font-serif text-xl font-semibold mt-2">CafeFlow</h3>
               <p className="text-xs tracking-widest opacity-70">SCAN TO ORDER</p>
@@ -332,7 +332,7 @@ export default function POSPage() {
               {selectedOrder && !isPaid && (
                 <div className="p-5 border-t border-border space-y-2">
                   <button onClick={markPaid}
-                    className="w-full py-3 rounded-xl bg-success text-white font-semibold hover:bg-success/90 transition-colors flex items-center justify-center gap-2">
+                    className="w-full py-3 rounded-xl bg-accent text-white font-semibold hover:bg-accent-hover transition-colors flex items-center justify-center gap-2">
                     <Check className="w-4 h-4" /> Mark Paid — {formatCurrency(selectedOrder.total)}
                   </button>
                   <p className="text-[11px] text-center text-text-muted">KOT already sent to kitchen · <Link href="/kitchen" className="text-accent hover:underline">View KOT</Link></p>

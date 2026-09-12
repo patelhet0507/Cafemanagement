@@ -98,7 +98,7 @@ export default function RecipesPage() {
                             <td className="py-2 font-mono font-semibold">₹{(Number(r.quantity) * Number(mat?.cost_per_unit ?? 0)).toFixed(2)}</td>
                             <td className="py-2 flex gap-1">
                               {isEditing ? (
-                                <><button onClick={saveEdit} className="p-1.5 rounded-lg bg-success text-white"><Save className="w-3.5 h-3.5" /></button><button onClick={() => setEditing(null)} className="p-1.5 rounded-lg border border-border"><X className="w-3.5 h-3.5" /></button></>
+                                <><button onClick={saveEdit} className="p-1.5 rounded-lg bg-accent text-white"><Save className="w-3.5 h-3.5" /></button><button onClick={() => setEditing(null)} className="p-1.5 rounded-lg border border-border"><X className="w-3.5 h-3.5" /></button></>
                               ) : (
                                 <><button onClick={() => startEdit(r)} className="p-1.5 rounded-lg hover:bg-surface-hover"><Pencil className="w-3.5 h-3.5" /></button><button onClick={() => handleDelete(r)} className="p-1.5 rounded-lg hover:bg-error/10 text-error"><Trash2 className="w-3.5 h-3.5" /></button></>
                               )}

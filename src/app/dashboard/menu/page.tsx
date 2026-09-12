@@ -208,7 +208,7 @@ export default function MenuManagementPage() {
             <label className="text-xs font-semibold tracking-widest text-text-muted">NEW SECTION NAME</label>
             <input value={newSection} onChange={(e) => setNewSection(e.target.value)} placeholder="e.g. Main Course" className="mt-1 w-full px-3 py-2.5 rounded-xl border border-border bg-background text-sm outline-none focus:border-accent" />
           </div>
-          <button onClick={addSection} className="px-4 py-2.5 rounded-xl bg-primary text-white text-sm font-medium hover:bg-primary-hover">Create</button>
+          <button onClick={addSection} className="px-4 py-2.5 rounded-xl bg-accent text-white text-sm font-medium hover:bg-accent-hover">Create</button>
           <button onClick={() => setShowSection(false)} className="px-4 py-2.5 rounded-xl border border-border text-sm">Cancel</button>
         </div>
       )}

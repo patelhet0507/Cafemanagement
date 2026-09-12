@@ -22,7 +22,7 @@ export function CartBar({ itemCount, total, onClick }: CartBarProps) {
     >
       <button
         onClick={onClick}
-        className="w-full flex items-center justify-between py-3.5 px-5 rounded-2xl bg-primary text-white shadow-xl"
+        className="w-full flex items-center justify-between py-3.5 px-5 rounded-2xl bg-accent text-white shadow-xl"
       >
         <div className="flex items-center gap-2">
           <ShoppingBag className="w-4 h-4" />

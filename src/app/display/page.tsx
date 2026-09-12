@@ -61,7 +61,7 @@ export default function DisplayPage() {
                   <p className="text-[11px] tracking-widest font-semibold text-text-muted">ORDER #{o.shortId} • TABLE {String(o.table).padStart(2, "0")}</p>
                   <p className="font-mono text-[56px] lg:text-[84px] font-black tracking-[-0.04em] leading-none mt-2">{o.shortId}</p>
                   <p className="text-sm font-semibold mt-1">Table {o.table} • {o.time}</p>
-                  <span className="mt-3 text-xs font-bold tracking-widest px-3 py-1 rounded-full bg-success text-white">READY</span>
+                  <span className="mt-3 text-xs font-bold tracking-widest px-3 py-1 rounded-full bg-accent text-white">READY</span>
                 </div>
               ))}
             </div>

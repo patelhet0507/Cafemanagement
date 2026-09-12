@@ -74,7 +74,7 @@ export default function WastagePage() {
             <div><label className="block text-xs font-medium text-text-secondary mb-1.5">Reported by</label><input type="text" value={form.by} onChange={(e) => setForm({ ...form, by: e.target.value })} placeholder="Staff name" className="w-full px-3 py-2.5 rounded-lg border border-border bg-background text-sm outline-none focus:border-accent" /></div>
           </div>
           <div className="flex gap-2 mt-4">
-            <button onClick={save} disabled={saving} className="px-4 py-2 rounded-lg bg-error text-white text-sm font-medium hover:bg-error/90 disabled:opacity-50">{saving ? "Saving…" : "Log Wastage"}</button>
+            <button onClick={save} disabled={saving} className="px-4 py-2 rounded-lg bg-accent text-white text-sm font-medium hover:bg-accent-hover disabled:opacity-50">{saving ? "Saving…" : "Log Wastage"}</button>
             <button onClick={() => setShowForm(false)} className="px-4 py-2 rounded-lg border border-border text-sm text-text-secondary hover:bg-surface-hover">Cancel</button>
           </div>
         </div>

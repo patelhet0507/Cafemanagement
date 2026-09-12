@@ -281,8 +281,8 @@ function MenuContent() {
           </div>
           <div className="flex items-center gap-2">
             <div className="flex rounded-full border border-border overflow-hidden text-xs">
-              <button onClick={() => setOrderType("dine_in")} className={`px-3 py-1.5 font-medium ${orderType === "dine_in" ? "bg-primary text-white" : "bg-surface hover:bg-surface-hover"}`}>Dine-in</button>
-              <button onClick={() => setOrderType("takeout")} className={`px-3 py-1.5 font-medium flex items-center gap-1 ${orderType === "takeout" ? "bg-primary text-white" : "bg-surface hover:bg-surface-hover"}`}><Bike className="w-3 h-3" /> Takeout</button>
+              <button onClick={() => setOrderType("dine_in")} className={`px-3 py-1.5 font-medium ${orderType === "dine_in" ? "bg-accent text-white" : "bg-surface hover:bg-surface-hover"}`}>Dine-in</button>
+              <button onClick={() => setOrderType("takeout")} className={`px-3 py-1.5 font-medium flex items-center gap-1 ${orderType === "takeout" ? "bg-accent text-white" : "bg-surface hover:bg-surface-hover"}`}><Bike className="w-3 h-3" /> Takeout</button>
             </div>
             <span className="text-xs font-medium px-3 py-1.5 rounded-full bg-accent/10 text-accent">
               {orderType === "takeout" ? "Takeout" : `Table ${String(tableNumber).padStart(2, "0")}`}
@@ -293,7 +293,7 @@ function MenuContent() {
           <div className="flex gap-1.5 overflow-x-auto no-scrollbar -mx-1 px-1">
             {categories.map((cat) => (
               <button key={cat} onClick={() => setActiveCategory(cat)}
-                className={`shrink-0 px-3.5 py-1.5 rounded-full text-xs font-medium transition-all ${activeCategory === cat ? "bg-primary text-white" : "bg-surface-hover text-text-secondary hover:bg-border"}`}>
+                className={`shrink-0 px-3.5 py-1.5 rounded-full text-xs font-medium transition-all ${activeCategory === cat ? "bg-accent text-white" : "bg-surface-hover text-text-secondary hover:bg-border"}`}>
                 {cat}
               </button>
             ))}
@@ -334,7 +334,7 @@ function MenuContent() {
       <div className="hidden sm:block">
         {cartCount > 0 && (
           <div className="fixed bottom-4 right-4 z-40">
-            <button onClick={() => setCartOpen(true)} className="flex items-center gap-2 py-3 px-5 rounded-2xl bg-primary text-white shadow-xl hover:bg-primary-hover transition-colors">
+            <button onClick={() => setCartOpen(true)} className="flex items-center gap-2 py-3 px-5 rounded-2xl bg-accent text-white shadow-xl hover:bg-accent-hover transition-colors">
               <span className="text-sm font-medium">{cartCount} items</span>
               <ChevronRight className="w-4 h-4" />
             </button>

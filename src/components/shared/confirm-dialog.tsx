@@ -17,7 +17,7 @@ export function ConfirmDialog({ open, title, description, confirmText = "Delete"
         </div>
         <div className="flex gap-2 mt-5">
           <button onClick={onCancel} className="flex-1 py-2.5 rounded-xl border border-border text-sm font-medium hover:bg-surface-hover">Cancel</button>
-          <button onClick={onConfirm} className={`flex-1 py-2.5 rounded-xl text-sm font-semibold text-white ${variant === "danger" ? "bg-error hover:bg-error/90" : "bg-accent hover:bg-accent-hover"}`}>{confirmText}</button>
+          <button onClick={onConfirm} className={`flex-1 py-2.5 rounded-xl text-sm font-semibold text-white ${variant === "danger" ? "bg-error hover:bg-accent-hover" : "bg-accent hover:bg-accent-hover"}`}>{confirmText}</button>
         </div>
       </div>
     </div>

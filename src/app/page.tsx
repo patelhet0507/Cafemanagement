@@ -7,7 +7,7 @@ export default function LandingPage() {
       <nav className="sticky top-0 z-30 backdrop-blur-md bg-background/70 border-b border-border">
         <div className="max-w-[1160px] mx-auto px-6 lg:px-8 h-[64px] flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-primary text-white flex items-center justify-center">
+            <div className="w-8 h-8 rounded-xl bg-accent text-white flex items-center justify-center">
               <Coffee className="w-[16px] h-[16px]" />
             </div>
             <span className="font-semibold tracking-tight">CafeFlow</span>
@@ -66,7 +66,7 @@ export default function LandingPage() {
                   <p className="text-[11px] tracking-widest opacity-80">GST 5%</p>
                   <p className="font-mono font-semibold">₹25</p>
                 </div>
-                <div className="p-3 rounded-xl bg-primary text-white">
+                <div className="p-3 rounded-xl bg-accent text-white">
                   <p className="text-[11px] tracking-widest opacity-70">TOTAL</p>
                   <p className="font-mono font-semibold">₹525</p>
                 </div>
@@ -93,7 +93,7 @@ export default function LandingPage() {
         {/* Feature strip — editorial, not 3 equal cards */}
         <section className="max-w-[1160px] mx-auto px-6 lg:px-8 py-12 lg:py-16">
           <div className="grid lg:grid-cols-[1.05fr_0.95fr] gap-6">
-            <div className="rounded-[24px] border border-border bg-primary text-white p-7 sm:p-8 flex flex-col">
+            <div className="rounded-[24px] border border-border bg-accent text-white p-7 sm:p-8 flex flex-col">
               <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center"><QrCode className="w-5 h-5" /></div>
               <h3 className="mt-4 text-xl font-semibold tracking-tight">QR ordering, minus the awkward wait</h3>
               <p className="mt-2 text-sm leading-relaxed text-white/70 max-w-[46ch]">Customers scan the table, order from their phone, pay at counter. Staff focus on making coffee, not taking orders.</p>
@@ -126,7 +126,7 @@ export default function LandingPage() {
           <div className="flex items-center gap-2">
             <Link href="/menu?table=1" className="px-3 py-1.5 rounded-full border border-border hover:bg-surface-hover">Menu</Link>
             <Link href="/scan" className="px-3 py-1.5 rounded-full border border-border hover:bg-surface-hover">Scan</Link>
-            <Link href="/login" className="px-4 py-1.5 rounded-full bg-primary text-white font-medium hover:bg-primary-hover">Staff Login</Link>
+            <Link href="/login" className="px-4 py-1.5 rounded-full bg-accent text-white font-medium hover:bg-accent-hover">Staff Login</Link>
           </div>
         </div>
       </footer>

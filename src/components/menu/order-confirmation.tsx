@@ -71,7 +71,7 @@ export function OrderConfirmation({ tableNumber, total, onBack, liveStatus, orde
         <div className="mt-6 space-y-2 text-left">
           {steps.map((s) => (
             <div key={s.label} className="flex items-center gap-3">
-              <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${s.done ? "bg-success text-white" : s.active ? "bg-accent text-white animate-pulse" : "bg-surface-hover text-text-muted"}`}>
+              <div className={`w-5 h-5 rounded-full flex items-center justify-center shrink-0 ${s.done ? "bg-accent text-white" : s.active ? "bg-accent text-white animate-pulse" : "bg-surface-hover text-text-muted"}`}>
                 {s.done ? <Check className="w-3 h-3" strokeWidth={3} /> : s.active ? <Clock className="w-3 h-3" /> : <div className="w-1.5 h-1.5 rounded-full bg-current" />}
               </div>
               <span className={`text-xs font-medium ${s.done ? "text-success" : s.active ? "text-accent" : "text-text-muted"}`}>{s.label}</span>

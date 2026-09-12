@@ -43,9 +43,19 @@ function MenuContent() {
 
   const addToCart = (item: MenuItem) => {
     setCart((prev) => {
-      const existing = prev.find((ci) => ci.item.id === item.id);
-      if (existing) return prev.map((ci) => ci.item.id === item.id ? { ...ci, quantity: ci.quantity + 1 } : ci);
-      return [...prev, { item, quantity: 1 }];
+      const wasEmpty = prev.length === 0;
+      const next = (() => {
+        const existing = prev.find((ci) => ci.item.id === item.id);
+        if (existing) return prev.map((ci) => ci.item.id === item.id ? { ...ci, quantity: ci.quantity + 1 } : ci);
+        return [...prev, { item, quantity: 1 }];
+      })();
+      if (wasEmpty && isSupabaseConfigured) {
+        // occupy table on first item added
+        import("@/lib/supabase").then(({ supabase }) => {
+          supabase.from("tables").update({ status: "occupied" } as never).eq("number", tableNumber).then(() => {});
+        });
+      }
+      return next;
     });
   };
 

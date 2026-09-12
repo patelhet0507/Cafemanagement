@@ -1,24 +1,24 @@
 import Link from "next/link";
-import { Coffee, ArrowRight, QrCode, Boxes, LineChart, Clock3, ShieldCheck, Sparkles } from "lucide-react";
+import { Coffee, ArrowRight, QrCode, Boxes, LineChart, Clock3, ShieldCheck, Sparkles, ScanLine } from "lucide-react";
 
 export default function LandingPage() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <nav className="sticky top-0 z-30 backdrop-blur-md bg-background/70 border-b border-border">
         <div className="max-w-[1160px] mx-auto px-6 lg:px-8 h-[64px] flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
+          <Link href="/" className="flex items-center gap-2.5">
             <div className="w-8 h-8 rounded-xl bg-primary text-white flex items-center justify-center">
               <Coffee className="w-[16px] h-[16px]" />
             </div>
             <span className="font-semibold tracking-tight">CafeFlow</span>
             <span className="hidden sm:inline text-[10px] tracking-widest font-semibold text-text-muted border border-border rounded-full px-2 py-0.5 ml-2">FOR INDEPENDENT CAFES</span>
-          </div>
+          </Link>
           <div className="flex items-center gap-2 sm:gap-3">
-            <Link href="/menu?table=1" className="hidden sm:inline-flex text-sm font-medium text-text-secondary hover:text-text-primary transition-colors">
-              Customer demo
+            <Link href="/scan" className="inline-flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-full border border-border bg-surface hover:bg-surface-hover">
+              <ScanLine className="w-4 h-4" /> Scan QR
             </Link>
-            <Link href="/login" className="text-sm font-medium px-4 py-2 rounded-full bg-primary text-white hover:bg-primary-hover transition-colors">
-              Staff Login
+            <Link href="/menu?table=1" className="text-sm font-medium px-4 py-2 rounded-full bg-accent text-white hover:bg-accent-hover transition-colors">
+              View Menu
             </Link>
           </div>
         </div>
@@ -42,10 +42,10 @@ export default function LandingPage() {
               <Link href="/menu?table=1" className="inline-flex items-center gap-2 px-6 py-3.5 rounded-full bg-accent text-white font-semibold hover:bg-accent-hover transition-colors shadow-sm">
                 Try Customer Menu <ArrowRight className="w-4 h-4" />
               </Link>
-              <Link href="/login" className="inline-flex items-center gap-2 px-5 py-3.5 rounded-full border border-border bg-surface font-medium hover:bg-surface-hover transition-colors">
-                Staff Login
+              <Link href="/scan" className="inline-flex items-center gap-2 px-5 py-3.5 rounded-full border border-border bg-surface font-medium hover:bg-surface-hover transition-colors">
+                <ScanLine className="w-4 h-4" /> Scan QR
               </Link>
-              <span className="text-xs text-text-muted flex items-center gap-1.5"><Clock3 className="w-3.5 h-3.5" /> No signup needed</span>
+              <span className="text-xs text-text-muted flex items-center gap-1.5"><Clock3 className="w-3.5 h-3.5" /> No app needed</span>
             </div>
 
             <div className="mt-10 flex flex-wrap gap-6 text-sm border-t border-border pt-6">
@@ -132,9 +132,9 @@ export default function LandingPage() {
         <div className="max-w-[1160px] mx-auto px-6 lg:px-8 h-14 flex items-center justify-between text-xs text-text-muted">
           <span>© {new Date().getFullYear()} CafeFlow — Built for independent cafes</span>
           <div className="flex items-center gap-4">
-            <Link href="/pos" className="hover:text-text-primary">POS</Link>
-            <Link href="/kitchen" className="hover:text-text-primary">Kitchen</Link>
-            <Link href="/dashboard" className="hover:text-text-primary">Dashboard</Link>
+            <Link href="/menu?table=1" className="hover:text-text-primary">Menu</Link>
+            <Link href="/scan" className="hover:text-text-primary">Scan</Link>
+            <span className="opacity-20 hover:opacity-100 transition-opacity"><Link href="/login" className="w-2 h-2 rounded-full bg-border inline-block" aria-label="Staff" title="Staff" /></span>
           </div>
         </div>
       </footer>

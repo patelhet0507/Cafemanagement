@@ -5,10 +5,12 @@ import { cn, formatCurrency } from "@/lib/utils";
 import { mockTables, mockOrders } from "@/lib/mock-data";
 import { useSupabaseTable } from "@/lib/supabase-helpers";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
-import { Clock, X, CreditCard, Banknote, Smartphone, Check, Users, UtensilsCrossed } from "lucide-react";
+import { Clock, X, CreditCard, Banknote, Smartphone, Check, Users, UtensilsCrossed, Pencil, Trash2, Settings2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import type { CafeTable, Order } from "@/types/database";
+import { ConfirmDialog } from "@/components/shared/confirm-dialog";
+import { useToast } from "@/components/shared/toaster";
 
 const statusConfig: Record<string, { label: string; dot: string; bg: string; border: string }> = {
   available: { label: "Available", dot: "bg-table-available", bg: "bg-table-available/[0.07]", border: "border-table-available/20" },
@@ -27,8 +29,14 @@ export default function POSPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [payMethod, setPayMethod] = useState<string>("cash");
   const [paid, setPaid] = useState<Set<string>>(new Set());
+  const toast = useToast();
+  const [showAdd, setShowAdd] = useState(false);
+  const [editing, setEditing] = useState<CafeTable | null>(null);
+  const [form, setForm] = useState({ number: "", name: "", capacity: "4", status: "available" as CafeTable["status"] });
+  const [saving, setSaving] = useState(false);
+  const [confirmDel, setConfirmDel] = useState<CafeTable | null>(null);
 
-  const { data: tables } = useSupabaseTable<CafeTable>("tables", mockTables);
+  const { data: tables, refetch: refetchTables } = useSupabaseTable<CafeTable>("tables", mockTables);
   const { data: orders, refetch: refetchOrders } = useSupabaseTable<Order>(
     "orders",
     mockOrders,
@@ -72,6 +80,33 @@ export default function POSPage() {
     setTimeout(() => setSelectedId(null), 600);
   };
 
+  const openAdd = () => { const nextNum = tables.length ? Math.max(...tables.map((t) => t.number)) + 1 : 1; setEditing(null); setForm({ number: String(nextNum), name: `Table ${nextNum}`, capacity: "4", status: "available" }); setShowAdd(true); };
+  const openEdit = (t: CafeTable) => { setEditing(t); setForm({ number: String(t.number), name: t.name, capacity: String(t.capacity), status: t.status }); setShowAdd(true); };
+  const saveTable = async () => {
+    if (!form.name || !form.number) { toast("Name and number required", "error"); return; }
+    if (!isSupabaseConfigured) { toast("Supabase not configured", "error"); return; }
+    setSaving(true);
+    try {
+      const payload = { number: Number(form.number), name: form.name, capacity: Number(form.capacity), status: form.status };
+      if (editing) {
+        const { error } = await supabase.from("tables").update(payload as never).eq("id", editing.id);
+        if (error) throw error;
+        toast("Table updated");
+      } else {
+        const { error } = await supabase.from("tables").insert(payload as never);
+        if (error) throw error;
+        toast("Table added");
+      }
+      setShowAdd(false); refetchTables();
+    } catch (e) { const m = (e as any)?.message ?? (e instanceof Error ? e.message : String(e)); toast(m.includes("duplicate") ? "Table number already exists" : m, "error"); } finally { setSaving(false); }
+  };
+  const deleteTable = async () => {
+    if (!confirmDel) return;
+    const { error } = await supabase.from("tables").delete().eq("id", confirmDel.id);
+    if (error) { toast(error.message, "error"); return; }
+    setConfirmDel(null); toast("Table deleted"); refetchTables();
+  };
+
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
@@ -79,7 +114,10 @@ export default function POSPage() {
           <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface border border-border text-text-muted hidden sm:inline-flex"><span className="w-2 h-2 rounded-full bg-success animate-pulse" /> Live</span>
           <span className="text-text-muted">{stats.occ} occupied · {stats.avail} free · {stats.total} total</span>
         </div>
-        <Link href="/kitchen" className="px-3 py-1.5 rounded-lg bg-accent text-white text-xs font-medium hover:bg-accent-hover transition-colors">Kitchen →</Link>
+        <div className="flex items-center gap-2">
+          <button onClick={openAdd} className="px-3 py-1.5 rounded-lg bg-primary text-white text-xs font-medium hover:bg-primary-hover flex items-center gap-1"><Settings2 className="w-3.5 h-3.5" /> Add Table</button>
+          <Link href="/kitchen" className="px-3 py-1.5 rounded-lg bg-accent text-white text-xs font-medium hover:bg-accent-hover transition-colors">Kitchen →</Link>
+        </div>
       </div>
       <div className="space-y-5">
         {/* Legend + filters */}
@@ -108,29 +146,35 @@ export default function POSPage() {
             const cfg = statusConfig[hasOrder ? "occupied" : table.status] ?? statusConfig.available;
             const isSelected = selectedId === table.id;
             return (
-              <button key={table.id} onClick={() => setSelectedId(table.id)}
-                className={cn("text-left p-4 rounded-2xl border-2 bg-surface transition-all hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
-                  isSelected ? "border-accent shadow-md ring-2 ring-accent/20" : hasOrder ? "border-table-occupied/25 bg-table-occupied/[0.04]" : cfg.border + " " + cfg.bg,
-                  "min-h-[128px] flex flex-col")}>
-                <div className="flex items-center justify-between">
-                  <span className="text-[11px] font-semibold tracking-widest text-text-muted">T{String(table.number).padStart(2, "0")}</span>
-                  <span className={cn("w-2.5 h-2.5 rounded-full", hasOrder ? "bg-table-occupied" : cfg.dot)} aria-hidden />
+              <div key={table.id} className="relative group">
+                <button onClick={() => setSelectedId(table.id)}
+                  className={cn("w-full text-left p-4 rounded-2xl border-2 bg-surface transition-all hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
+                    isSelected ? "border-accent shadow-md ring-2 ring-accent/20" : hasOrder ? "border-table-occupied/25 bg-table-occupied/[0.04]" : cfg.border + " " + cfg.bg,
+                    "min-h-[128px] flex flex-col")}>
+                  <div className="flex items-center justify-between">
+                    <span className="text-[11px] font-semibold tracking-widest text-text-muted">T{String(table.number).padStart(2, "0")}</span>
+                    <span className={cn("w-2.5 h-2.5 rounded-full", hasOrder ? "bg-table-occupied" : cfg.dot)} aria-hidden />
+                  </div>
+                  <p className="mt-1 font-semibold leading-tight">{table.name}</p>
+                  <p className="text-xs text-text-secondary flex items-center gap-1 mt-0.5"><Users className="w-3 h-3" /> {table.capacity} seats</p>
+                  <div className="mt-auto pt-3">
+                    {isPaid ? (
+                      <span className="inline-flex items-center gap-1 text-xs font-semibold text-success"><Check className="w-3.5 h-3.5" /> Paid</span>
+                    ) : hasOrder ? (
+                      <div>
+                        <p className="text-sm font-mono font-semibold text-accent">{formatCurrency(order.total)}</p>
+                        <p className="text-[11px] text-text-muted flex items-center gap-1"><Clock className="w-3 h-3" /> 18 min · 2 items</p>
+                      </div>
+                    ) : (
+                      <span className={cn("inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold tracking-wide", cfg.bg, "border", cfg.border)}>{cfg.label}</span>
+                    )}
+                  </div>
+                </button>
+                <div className="absolute top-1 right-1 hidden group-hover:flex gap-1">
+                  <button onClick={(e) => { e.stopPropagation(); openEdit(table); }} className="w-6 h-6 rounded-lg bg-surface border border-border flex items-center justify-center hover:bg-surface-hover"><Pencil className="w-3 h-3" /></button>
+                  <button onClick={(e) => { e.stopPropagation(); setConfirmDel(table); }} className="w-6 h-6 rounded-lg bg-surface border border-border flex items-center justify-center hover:bg-error/10 text-error"><Trash2 className="w-3 h-3" /></button>
                 </div>
-                <p className="mt-1 font-semibold leading-tight">{table.name}</p>
-                <p className="text-xs text-text-secondary flex items-center gap-1 mt-0.5"><Users className="w-3 h-3" /> {table.capacity} seats</p>
-                <div className="mt-auto pt-3">
-                  {isPaid ? (
-                    <span className="inline-flex items-center gap-1 text-xs font-semibold text-success"><Check className="w-3.5 h-3.5" /> Paid</span>
-                  ) : hasOrder ? (
-                    <div>
-                      <p className="text-sm font-mono font-semibold text-accent">{formatCurrency(order.total)}</p>
-                      <p className="text-[11px] text-text-muted flex items-center gap-1"><Clock className="w-3 h-3" /> 18 min · 2 items</p>
-                    </div>
-                  ) : (
-                    <span className={cn("inline-flex px-2 py-0.5 rounded-full text-[10px] font-semibold tracking-wide", cfg.bg, "border", cfg.border)}>{cfg.label}</span>
-                  )}
-                </div>
-              </button>
+              </div>
             );
           })}
         </div>
@@ -141,6 +185,24 @@ export default function POSPage() {
           </div>
         )}
       </div>
+
+      {showAdd && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm" onClick={() => setShowAdd(false)}>
+          <div className="w-full max-w-sm bg-surface rounded-2xl shadow-2xl p-5" onClick={(e) => e.stopPropagation()}>
+            <h3 className="font-semibold mb-3">{editing ? "Edit Table" : "Add Table"}</h3>
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div><label className="text-xs font-semibold tracking-widest text-text-muted">NUMBER</label><input type="number" value={form.number} onChange={(e) => setForm({ ...form, number: e.target.value })} className="mt-1 w-full px-3 py-2.5 rounded-xl border border-border bg-background text-sm outline-none focus:border-accent" /></div>
+                <div><label className="text-xs font-semibold tracking-widest text-text-muted">CAPACITY</label><input type="number" value={form.capacity} onChange={(e) => setForm({ ...form, capacity: e.target.value })} className="mt-1 w-full px-3 py-2.5 rounded-xl border border-border bg-background text-sm outline-none focus:border-accent" /></div>
+              </div>
+              <div><label className="text-xs font-semibold tracking-widest text-text-muted">NAME</label><input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="mt-1 w-full px-3 py-2.5 rounded-xl border border-border bg-background text-sm outline-none focus:border-accent" /></div>
+              <div><label className="text-xs font-semibold tracking-widest text-text-muted">STATUS</label><select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value as CafeTable["status"] })} className="mt-1 w-full px-3 py-2.5 rounded-xl border border-border bg-background text-sm"><option value="available">Available</option><option value="occupied">Occupied</option><option value="reserved">Reserved</option></select></div>
+            </div>
+            <div className="flex gap-2 mt-5"><button onClick={saveTable} disabled={saving} className="flex-1 py-2.5 rounded-xl bg-accent text-white font-semibold hover:bg-accent-hover disabled:opacity-40">{saving ? "Saving…" : editing ? "Update" : "Add"}</button><button onClick={() => setShowAdd(false)} className="px-4 py-2.5 rounded-xl border border-border text-sm">Cancel</button></div>
+          </div>
+        </div>
+      )}
+      <ConfirmDialog open={!!confirmDel} title={`Delete ${confirmDel?.name}?`} description="Removes table permanently." onConfirm={deleteTable} onCancel={() => setConfirmDel(null)} />
 
       {/* Selected drawer */}
       <AnimatePresence>

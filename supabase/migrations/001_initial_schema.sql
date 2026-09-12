@@ -3,12 +3,12 @@
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
-CREATE TYPE table_status AS ENUM ("available", "occupied", "reserved");
-CREATE TYPE order_status AS ENUM ("pending", "confirmed", "preparing", "ready", "served", "paid", "cancelled");
-CREATE TYPE payment_status AS ENUM ("unpaid", "paid", "refunded");
-CREATE TYPE material_unit AS ENUM ("ml", "grams", "pieces", "liters", "kg");
-CREATE TYPE audit_reason AS ENUM ("order_deduction", "wastage", "purchase", "adjustment");
-CREATE TYPE wastage_reason AS ENUM ("spillage", "burnt", "expired", "damaged", "preparation_error", "other");
+CREATE TYPE table_status AS ENUM ('available', 'occupied', 'reserved');
+CREATE TYPE order_status AS ENUM ('pending', 'confirmed', 'preparing', 'ready', 'served', 'paid', 'cancelled');
+CREATE TYPE payment_status AS ENUM ('unpaid', 'paid', 'refunded');
+CREATE TYPE material_unit AS ENUM ('ml', 'grams', 'pieces', 'liters', 'kg');
+CREATE TYPE audit_reason AS ENUM ('order_deduction', 'wastage', 'purchase', 'adjustment');
+CREATE TYPE wastage_reason AS ENUM ('spillage', 'burnt', 'expired', 'damaged', 'preparation_error', 'other');
 
 CREATE TABLE tables (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),

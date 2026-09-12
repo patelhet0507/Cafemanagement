@@ -71,13 +71,29 @@ function MenuContent() {
     }
   }, [orderPlaced, orderId, tableNumber, orderType, orderTotal, liveStatus, notifOn]);
 
+  const safeNotify = (title: string, body: string) => {
+    try {
+      if ("serviceWorker" in navigator && navigator.serviceWorker.controller) {
+        navigator.serviceWorker.ready.then((reg) => (reg as unknown as { showNotification: (t: string, o: unknown) => void }).showNotification(title, { body, icon: "/favicon.ico" } as unknown as never)).catch(() => {
+          try { new Notification(title, { body, icon: "/favicon.ico" } as unknown as never); } catch {}
+        });
+      } else {
+        new Notification(title, { body, icon: "/favicon.ico" } as unknown as never);
+      }
+    } catch {
+      try { new Notification(title, { body, icon: "/favicon.ico" } as unknown as never); } catch {}
+    }
+  };
+
   useEffect(() => {
     if (!orderId) return;
     if (!isSupabaseConfigured && orderId.startsWith("mock_")) {
       const t = setTimeout(() => {
         setLiveStatus("ready");
-        if (notifOn && Notification.permission === "granted") {
-          new Notification(`Order ready — ${orderType === "takeout" ? "Takeout" : `Table ${String(tableNumber).padStart(2, "0")}`}`, { body: `Order #${orderId.slice(0, 6).toUpperCase()} ready — collect at counter` });
+        if (notifOn) {
+          try {
+            if (Notification.permission === "granted") safeNotify(`Order ready — ${orderType === "takeout" ? "Takeout" : `Table ${String(tableNumber).padStart(2, "0")}`}`, `Order #${orderId.slice(0, 6).toUpperCase()} ready — collect at counter`);
+          } catch {}
           navigator.vibrate?.([200, 100, 200]);
         }
       }, 12000);
@@ -101,10 +117,11 @@ function MenuContent() {
       toast(`Order #${orderId.slice(0, 4).toUpperCase()} is ready — ${orderType === "takeout" ? "collect at counter" : `Table ${String(tableNumber).padStart(2, "0")} ready`}`, "success");
       try { new Audio("/ding.mp3").play().catch(() => {}); } catch {}
       navigator.vibrate?.([200, 100, 200]);
-      if (notifOn && Notification.permission === "granted") {
-        new Notification(`Order ready — ${orderType === "takeout" ? "Takeout" : `Table ${String(tableNumber).padStart(2, "0")}`}`, { body: `Order #${orderId.slice(0, 4).toUpperCase()} ready — collect at counter`, icon: "/favicon.ico" });
-      } else if (notifOn && Notification.permission !== "denied") {
-        Notification.requestPermission().then((p) => { if (p === "granted") new Notification(`Order ready!`); });
+      if (notifOn) {
+        try {
+          if (Notification.permission === "granted") safeNotify(`Order ready — ${orderType === "takeout" ? "Takeout" : `Table ${String(tableNumber).padStart(2, "0")}`}`, `Order #${orderId.slice(0, 4).toUpperCase()} ready — collect at counter`);
+          else if (Notification.permission !== "denied") Notification.requestPermission().then((p) => { if (p === "granted") { try { safeNotify("Order ready!", `Order #${orderId.slice(0, 4).toUpperCase()} ready`); } catch {} } });
+        } catch {}
       }
     }
     prevRef.current = liveStatus;

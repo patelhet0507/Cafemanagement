@@ -27,7 +27,8 @@ function MenuContent() {
   const [orderTotal, setOrderTotal] = useState(0);
   const [placing, setPlacing] = useState(false);
 
-  const { data: menuItems, loading: menuLoading } = useSupabaseTable<MenuItem>("menu_items", mockMenuItems, (q) => q.eq("is_available", true).order("category", { ascending: true }));
+  const { data: liveItems, loading: menuLoading } = useSupabaseTable<MenuItem>("menu_items", mockMenuItems, (q) => q.eq("is_available", true).order("category", { ascending: true }));
+  const menuItems = liveItems.length ? liveItems : mockMenuItems;
   const categories = useMemo(() => {
     const cats = Array.from(new Set(menuItems.map((m) => m.category)));
     return ["Recommended", ...cats];

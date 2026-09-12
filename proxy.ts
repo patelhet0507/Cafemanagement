@@ -6,9 +6,9 @@ export default function proxy(req: NextRequest) {
   const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || req.headers.get("x-real-ip") || "anon";
   const path = req.nextUrl.pathname;
 
-  // stricter for mutating endpoints (place order, login, purchases/wastage)
+  // stricter for writes, lenient for reads (page loads)
   const isWrite = req.method !== "GET" || path.startsWith("/api") || path.includes("place") || path === "/login";
-  const limit = isWrite ? 20 : 60; // 20 writes / 60 reads per minute per IP
+  const limit = isWrite ? 30 : 300; // 30 writes / 300 reads per minute per IP
   const { ok, remaining, reset } = rateLimit(`global:${ip}:${isWrite ? "w" : "r"}`, limit, 60_000);
 
   const res = ok ? NextResponse.next() : NextResponse.json({ error: "Rate limited — try again shortly" }, { status: 429 });

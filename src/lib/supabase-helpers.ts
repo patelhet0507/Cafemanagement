@@ -44,6 +44,8 @@ export function useSupabaseTable<T>(
   return { data, loading, error, refetch: fetch, isLive: isSupabaseConfigured && !error };
 }
 
+const isUuid = (s: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
+
 // Place order: inserts orders + order_items, deducts stock via audit_log (app-level, no DB function yet)
 export async function placeSupabaseOrder(args: {
   tableId: string | null;
@@ -52,6 +54,9 @@ export async function placeSupabaseOrder(args: {
   total: number;
 }) {
   if (!isSupabaseConfigured) return { id: `mock_${Date.now()}`, mocked: true };
+  // sanitize: mock IDs like "m1" are not UUIDs — drop them for DB calls
+  const validTableId = args.tableId && isUuid(args.tableId) ? args.tableId : null;
+  const validItems = args.items.filter((it) => isUuid(it.id)); // only real UUID items go to FK tables
 
   // upsert customer by phone
   let customerId: string | null = null;
@@ -70,7 +75,7 @@ export async function placeSupabaseOrder(args: {
   const { data: order, error: oErr } = await supabase
     .from("orders")
     .insert({
-      table_id: args.tableId,
+      table_id: validTableId,
       customer_id: customerId,
       status: "pending",
       total: args.total,
@@ -81,11 +86,11 @@ export async function placeSupabaseOrder(args: {
   if (oErr) throw oErr;
   const orderId = (order as { id: string }).id;
 
-  // occupy table
-  if (args.tableId) await supabase.from("tables").update({ status: "occupied" } as never).eq("id", args.tableId);
+  // occupy table (best-effort)
+  if (validTableId) await supabase.from("tables").update({ status: "occupied" } as never).eq("id", validTableId);
 
-  if (args.items.length) {
-    const rows = args.items.map((it) => ({
+  if (validItems.length) {
+    const rows = validItems.map((it) => ({
       order_id: orderId,
       menu_item_id: it.id,
       quantity: it.quantity,
@@ -93,12 +98,14 @@ export async function placeSupabaseOrder(args: {
       status: "pending",
     }));
     const { error: iErr } = await supabase.from("order_items").insert(rows as never);
-    if (iErr) throw iErr;
+    if (iErr) console.warn("order_items insert skipped (FK/mock ids):", iErr.message);
   }
 
   // app-level stock deduct + audit (best-effort, no transaction)
   try {
-    const { data: recipes } = await supabase.from("recipes").select("raw_material_id, quantity, menu_item_id").in("menu_item_id", args.items.map((i) => i.id));
+    const recipeIds = validItems.map((i) => i.id);
+    if (!recipeIds.length) return { id: orderId, mocked: false };
+    const { data: recipes } = await supabase.from("recipes").select("raw_material_id, quantity, menu_item_id").in("menu_item_id", recipeIds);
     if (recipes) {
       for (const it of args.items) {
         const rel = (recipes as { raw_material_id: string; quantity: number; menu_item_id: string }[]).filter((r) => r.menu_item_id === it.id);

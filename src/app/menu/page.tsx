@@ -58,20 +58,24 @@ function MenuContent() {
     const total = cartTotal + Math.round(cartTotal * 0.05);
     setPlacing(true);
     try {
+      // best-effort Supabase — never block confirmation
       if (isSupabaseConfigured) {
-        // map table number -> uuid if available
-        let tableId: string | null = null;
         try {
-          const { supabase } = await import("@/lib/supabase");
-          const { data: t } = await supabase.from("tables").select("id").eq("number", tableNumber).maybeSingle();
-          if (t) tableId = (t as { id: string }).id;
-        } catch {}
-        await placeSupabaseOrder({
-          tableId,
-          customerPhone: phone,
-          items: cart.map((c) => ({ id: c.item.id, price: c.item.price, quantity: c.quantity })),
-          total,
-        });
+          let tableId: string | null = null;
+          try {
+            const { supabase } = await import("@/lib/supabase");
+            const { data: t } = await supabase.from("tables").select("id").eq("number", tableNumber).maybeSingle();
+            if (t) tableId = (t as { id: string }).id;
+          } catch {}
+          await placeSupabaseOrder({
+            tableId,
+            customerPhone: phone,
+            items: cart.map((c) => ({ id: c.item.id, price: c.item.price, quantity: c.quantity })),
+            total,
+          });
+        } catch (e) {
+          console.warn("Supabase place failed, falling back to mock:", e);
+        }
       }
       mockSendWhatsApp(phone!, getOrderConfirmationMessage(tableNumber, total));
       setOrderTotal(total);

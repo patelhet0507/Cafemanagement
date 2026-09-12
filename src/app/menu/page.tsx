@@ -36,6 +36,7 @@ function MenuContent() {
   const [placing, setPlacing] = useState(false);
   const [occupiedErr, setOccupiedErr] = useState<string | null>(null);
   const [addMoreMode, setAddMoreMode] = useState(false);
+  const [welcomeBack, setWelcomeBack] = useState<Stored | null>(null);
   const toast = useToast();
 
   const { data: liveItems, loading: menuLoading } = useSupabaseTable<MenuItem>("menu_items", mockMenuItems, (q) => q.eq("is_available", true).order("category", { ascending: true }));
@@ -55,10 +56,20 @@ function MenuContent() {
       try {
         const s: Stored = JSON.parse(raw);
         if (s.orderId && s.tableNumber === tableNumber) {
-          setOrderId(s.orderId); setOrderTotal(s.total); setLiveStatus(s.status); setOrderType(s.orderType); setNotifOn(!!s.notif);
-          setOrderPlaced(true);
+          if (s.status === "served") {
+            setWelcomeBack(s);
+            // keep table & orderType but start fresh order (cart empty)
+            setOrderType(s.orderType);
+          } else {
+            setOrderId(s.orderId); setOrderTotal(s.total); setLiveStatus(s.status); setOrderType(s.orderType); setNotifOn(!!s.notif);
+            setOrderPlaced(true);
+          }
+        } else {
+          setWelcomeBack(null);
         }
       } catch {}
+    } else {
+      setWelcomeBack(null);
     }
     const n = localStorage.getItem("cafeflow_notif");
     if (n === "1") setNotifOn(true);
@@ -222,6 +233,25 @@ function MenuContent() {
     }
   };
 
+  const handleReorder = async () => {
+    if (!welcomeBack) return;
+    try {
+      const { data } = await supabase.from("order_items").select("menu_item_id, quantity").eq("order_id", welcomeBack.orderId);
+      if (!data?.length) { toast("No items in last order", "error"); return; }
+      const ids = (data as { menu_item_id: string }[]).map((d) => d.menu_item_id);
+      const { data: menus } = await supabase.from("menu_items").select("id, name, price, description, category, image_url, is_available, prep_time_min").in("id", ids);
+      const map = new Map((menus as MenuItem[] | null)?.map((m) => [m.id, m]) ?? []);
+      const newCart: CartItem[] = (data as { menu_item_id: string; quantity: number }[]).map((d) => {
+        const mi = map.get(d.menu_item_id);
+        if (!mi) return null;
+        return { item: mi, quantity: d.quantity } as CartItem;
+      }).filter(Boolean) as CartItem[];
+      if (newCart.length) { setCart(newCart); setCartOpen(true); toast(`Added ${newCart.length} items from last order`); }
+    } catch {
+      toast("Could not reorder", "error");
+    }
+  };
+
   if (orderPlaced && orderId) {
     return (
       <OrderConfirmation
@@ -271,6 +301,21 @@ function MenuContent() {
         </div>
         {orderType === "takeout" && <div className="max-w-2xl mx-auto px-4 pb-2 text-[11px] text-text-muted text-center">Takeout — collect at the counter</div>}
         {occupiedErr && <div className="max-w-2xl mx-auto px-4 pb-3"><div className="px-3 py-2 rounded-xl bg-error-bg border border-error/20 text-error-text text-xs text-center">{occupiedErr}</div></div>}
+        {welcomeBack && (
+          <div className="max-w-2xl mx-auto px-4 pb-3">
+            <div className="px-4 py-3 rounded-xl bg-accent-light border border-accent/20 flex flex-col sm:flex-row items-center gap-3">
+              <div className="flex-1">
+                <p className="text-sm font-semibold">Welcome back — Table {String(welcomeBack.tableNumber).padStart(2, "0")}</p>
+                <p className="text-xs text-text-secondary">Last order #{welcomeBack.shortId} collected — would you like to order more?</p>
+              </div>
+              <div className="flex gap-2">
+                <button onClick={handleReorder} className="px-3 py-1.5 rounded-full bg-accent text-white text-xs font-medium hover:bg-accent-hover">Reorder last items</button>
+                <button onClick={() => setWelcomeBack(null)} className="px-3 py-1.5 rounded-full border border-border bg-surface text-xs">Dismiss</button>
+                <button onClick={() => { setOrderId(welcomeBack.orderId); setLiveStatus(welcomeBack.status); setOrderTotal(welcomeBack.total); setOrderPlaced(true); }} className="px-3 py-1.5 rounded-full border border-border bg-surface text-xs">View receipt</button>
+              </div>
+            </div>
+          </div>
+        )}
       </header>
 
       <main className="max-w-2xl mx-auto px-4 py-4 pb-24">

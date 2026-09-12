@@ -18,6 +18,21 @@ interface Props {
 
 export function OrderConfirmation({ tableNumber, total, onBack, liveStatus, orderId, orderType = "dine_in", notifOn, onNotifToggle, onAddMore }: Props) {
   const status = (liveStatus || "pending").toLowerCase();
+  const isServed = status === "served";
+  if (isServed) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="w-full max-w-sm bg-surface rounded-2xl p-6 shadow-lg text-center">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-success/10 text-success mb-4"><Check className="w-8 h-8" strokeWidth={3} /></div>
+          <h2 className="text-xl font-semibold">Thank you! ✓</h2>
+          <p className="text-sm text-text-secondary mt-1">Order #{orderId?.slice(0, 6).toUpperCase()} collected</p>
+          <p className="text-xs text-text-muted mt-2">We hope you enjoyed your meal.</p>
+          <button onClick={onAddMore} className="mt-6 w-full flex items-center justify-center gap-1.5 py-3 rounded-xl bg-accent text-white font-semibold hover:bg-accent-hover"><Plus className="w-4 h-4" /> Order more</button>
+          <button onClick={onBack} className="mt-3 w-full py-2.5 rounded-xl border border-border text-sm">Back to menu</button>
+        </motion.div>
+      </div>
+    );
+  }
   const isPaid = status === "paid";
   const steps = [
     { label: "Order Received", key: "pending", done: ["confirmed", "preparing", "ready", "paid", "served"].includes(status), active: status === "pending" },

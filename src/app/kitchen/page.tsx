@@ -12,7 +12,7 @@ interface KOT {
   table: number;
   items: { name: string; qty: number; modifiers?: string }[];
   time: string;
-  status: "new" | "preparing" | "ready";
+  status: "new" | "preparing" | "ready" | "collected";
 }
 
 const initialKOTs: KOT[] = [
@@ -28,7 +28,7 @@ const columnConfig = {
 };
 
 function KOTCard({ kot, onMove }: { kot: KOT; onMove: (fullId: string, status: KOT["status"]) => void }) {
-  const nextStatus = kot.status === "new" ? "preparing" : kot.status === "preparing" ? "ready" : null;
+  const nextStatus = kot.status === "new" ? "preparing" : kot.status === "preparing" ? "ready" : kot.status === "ready" ? "collected" : null;
   return (
     <motion.div layout initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}
       className="bg-surface rounded-xl border border-border p-4 shadow-sm hover:shadow-md transition-shadow">
@@ -53,8 +53,8 @@ function KOTCard({ kot, onMove }: { kot: KOT; onMove: (fullId: string, status: K
       <button onClick={() => window.print()} className="w-full py-1.5 rounded-lg bg-accent text-white text-xs font-semibold hover:bg-accent-hover border border-accent">Print KOT</button>
       {nextStatus && (
         <button onClick={() => onMove(kot.id, nextStatus)}
-          className="w-full py-2.5 rounded-lg bg-accent text-white hover:bg-accent-hover text-sm font-semibold flex items-center justify-center gap-1.5 transition-colors">
-          {nextStatus === "preparing" ? <><Play className="w-4 h-4" /> START PREPARING</> : <><Check className="w-4 h-4" /> MARK READY</>}
+          className="w-full mt-1.5 py-2.5 rounded-lg bg-accent text-white hover:bg-accent-hover text-sm font-semibold flex items-center justify-center gap-1.5 transition-colors">
+          {nextStatus === "preparing" ? <><Play className="w-4 h-4" /> START PREPARING</> : nextStatus === "ready" ? <><Check className="w-4 h-4" /> MARK READY</> : <><Check className="w-4 h-4" /> COLLECTED</>}
         </button>
       )}
     </motion.div>
@@ -98,16 +98,21 @@ export default function KitchenPage() {
 
   const moveKOT = async (fullId: string, status: KOT["status"]) => {
     const prev = kots.find((k) => k.id === fullId)?.status;
-    setKots((p) => p.map((k) => (k.id === fullId ? { ...k, status } : k)));
+    // optimistic: for collected, remove from list immediately
+    if (status === "collected") setKots((p) => p.filter((k) => k.id !== fullId));
+    else setKots((p) => p.map((k) => (k.id === fullId ? { ...k, status } : k)));
     if (!isSupabaseConfigured) return;
-    const dbStatus = status === "new" ? "pending" : status === "preparing" ? "preparing" : "ready";
+    const dbStatus = status === "new" ? "pending" : status === "preparing" ? "preparing" : status === "ready" ? "ready" : "served";
     const { error } = await supabase.from("orders").update({ status: dbStatus } as never).eq("id", fullId);
     if (error) {
-      if (prev) setKots((p) => p.map((k) => (k.id === fullId ? { ...k, status: prev } : k)));
+      if (prev) setKots((p) => {
+        if (status === "collected") return [...p, kots.find((k) => k.id === fullId)!].filter(Boolean);
+        return p.map((k) => (k.id === fullId ? { ...k, status: prev } : k));
+      });
       alert(error.message.includes("schema cache") ? "Schema cache stale — run NOTIFY pgrst, 'reload schema';" : error.message);
     }
   };
-  const columns: KOT["status"][] = ["new", "preparing", "ready"];
+  const columns: Array<"new" | "preparing" | "ready"> = ["new", "preparing", "ready"];
 
   return (
     <div className="space-y-5">

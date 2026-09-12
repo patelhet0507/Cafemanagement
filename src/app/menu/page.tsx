@@ -12,6 +12,7 @@ import { OrderConfirmation } from "@/components/menu/order-confirmation";
 import { mockSendWhatsApp, getOrderConfirmationMessage } from "@/lib/mock-services";
 import { useSupabaseTable, placeSupabaseOrder, addItemsToOrder } from "@/lib/supabase-helpers";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
+import { useToast } from "@/components/shared/toaster";
 import type { MenuItem } from "@/types/database";
 
 const STORE_KEY = "cafeflow_customer_state";
@@ -35,6 +36,7 @@ function MenuContent() {
   const [placing, setPlacing] = useState(false);
   const [occupiedErr, setOccupiedErr] = useState<string | null>(null);
   const [addMoreMode, setAddMoreMode] = useState(false);
+  const toast = useToast();
 
   const { data: liveItems, loading: menuLoading } = useSupabaseTable<MenuItem>("menu_items", mockMenuItems, (q) => q.eq("is_available", true).order("category", { ascending: true }));
   const menuItems = liveItems.length ? liveItems : mockMenuItems;
@@ -95,12 +97,13 @@ function MenuContent() {
   useEffect(() => {
     if (!orderId || !liveStatus) return;
     localStorage.setItem(STORE_KEY, JSON.stringify({ orderId, shortId: orderId.slice(0, 4).toUpperCase(), tableNumber, orderType, total: orderTotal, status: liveStatus, notif: notifOn }));
-    if (liveStatus === "ready" && prevRef.current !== "ready" && notifOn) {
-      if (Notification.permission === "granted") {
+    if (liveStatus === "ready" && prevRef.current !== "ready") {
+      toast(`Order #${orderId.slice(0, 4).toUpperCase()} is ready — ${orderType === "takeout" ? "collect at counter" : `Table ${String(tableNumber).padStart(2, "0")} ready`}`, "success");
+      try { new Audio("/ding.mp3").play().catch(() => {}); } catch {}
+      navigator.vibrate?.([200, 100, 200]);
+      if (notifOn && Notification.permission === "granted") {
         new Notification(`Order ready — ${orderType === "takeout" ? "Takeout" : `Table ${String(tableNumber).padStart(2, "0")}`}`, { body: `Order #${orderId.slice(0, 4).toUpperCase()} ready — collect at counter`, icon: "/favicon.ico" });
-        navigator.vibrate?.([200, 100, 200]);
-        try { new Audio("/ding.mp3").play().catch(() => {}); } catch {}
-      } else if (Notification.permission !== "denied") {
+      } else if (notifOn && Notification.permission !== "denied") {
         Notification.requestPermission().then((p) => { if (p === "granted") new Notification(`Order ready!`); });
       }
     }

@@ -35,8 +35,8 @@ export function MenuCard({ item, onAdd }: MenuCardProps) {
       animate={{ opacity: 1, scale: 1 }}
       className="group relative bg-surface rounded-xl border border-border overflow-hidden hover:shadow-md transition-all duration-200"
     >
-      <div className={cn("h-28 bg-gradient-to-br flex items-center justify-center", gradient)}>
-        <span className="text-4xl">{emoji}</span>
+      <div className={cn("h-28 bg-gradient-to-br flex items-center justify-center overflow-hidden", gradient)}>
+        {item.image_url ? <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" /> : <span className="text-4xl">{emoji}</span>}
       </div>
       <div className="p-3">
         <div className="flex items-start justify-between gap-2">

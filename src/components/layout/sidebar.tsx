@@ -22,6 +22,8 @@ import {
   ChevronRight,
 } from "lucide-react";
 import { useState } from "react";
+import { useAuth } from "@/components/auth/auth-provider";
+import { LogOut } from "lucide-react";
 
 const navSections = [
   {
@@ -61,6 +63,7 @@ const navSections = [
 
 export function Sidebar() {
   const pathname = usePathname();
+  const { user, logout } = useAuth();
   const [collapsed, setCollapsed] = useState(false);
 
   return (
@@ -119,6 +122,14 @@ export function Sidebar() {
         ))}
       </nav>
 
+      {/* User + logout */}
+      {!collapsed && user && (
+        <div className="px-3 py-3 border-t border-border flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-full bg-accent/10 text-accent flex items-center justify-center text-xs font-bold">{user.name[0]}</div>
+          <div className="flex-1 min-w-0"><p className="text-sm font-medium truncate">{user.name}</p><p className="text-[11px] text-text-muted capitalize">{user.role}</p></div>
+          <button onClick={logout} className="w-8 h-8 rounded-lg hover:bg-surface-hover flex items-center justify-center text-text-muted"><LogOut className="w-4 h-4" /></button>
+        </div>
+      )}
       {/* Collapse toggle */}
       <button
         onClick={() => setCollapsed(!collapsed)}

@@ -1,7 +1,8 @@
 "use client";
 
-import { Search, Bell, HelpCircle } from "lucide-react";
+import { Search, Bell, HelpCircle, LogOut } from "lucide-react";
 import { usePathname } from "next/navigation";
+import { useAuth } from "@/components/auth/auth-provider";
 
 const titles: Record<string, string> = {
   "/dashboard": "Dashboard",
@@ -13,11 +14,14 @@ const titles: Record<string, string> = {
   "/dashboard/recipes": "Recipes",
   "/dashboard/customers": "Customers",
   "/dashboard/variance": "Variance",
+  "/pos": "Tables",
+  "/kitchen": "Kitchen",
 };
 
 export function Topbar() {
   const pathname = usePathname();
-  const title = titles[pathname] ?? "Dashboard";
+  const { user, logout } = useAuth();
+  const title = titles[pathname] ?? (pathname.startsWith("/pos") ? "Tables" : pathname.startsWith("/kitchen") ? "Kitchen" : "Dashboard");
   return (
     <header className="sticky top-0 z-30 flex items-center h-16 px-6 bg-background/80 backdrop-blur-md border-b border-border">
       <div className="flex items-center gap-3 flex-1">
@@ -57,12 +61,15 @@ export function Topbar() {
         {/* User */}
         <div className="flex items-center gap-2 pl-2 ml-1 border-l border-border">
           <div className="flex items-center justify-center w-8 h-8 rounded-full bg-accent/10 text-accent text-sm font-semibold">
-            H
+            {(user?.name?.[0] ?? "H").toUpperCase()}
           </div>
           <div className="hidden md:block">
-            <p className="text-sm font-medium leading-tight">Het</p>
-            <p className="text-[11px] text-text-muted leading-tight">Owner</p>
+            <p className="text-sm font-medium leading-tight">{user?.name ?? "Het"}</p>
+            <p className="text-[11px] text-text-muted leading-tight capitalize">{user?.role ?? "Owner"}</p>
           </div>
+          <button onClick={logout} className="hidden sm:flex ml-1 w-8 h-8 rounded-lg hover:bg-surface-hover items-center justify-center text-text-muted hover:text-text-primary" title="Logout">
+            <LogOut className="w-4 h-4" />
+          </button>
         </div>
       </div>
     </header>

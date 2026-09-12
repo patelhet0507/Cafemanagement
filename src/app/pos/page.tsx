@@ -5,7 +5,7 @@ import { cn, formatCurrency } from "@/lib/utils";
 import { mockTables, mockOrders } from "@/lib/mock-data";
 import { useSupabaseTable } from "@/lib/supabase-helpers";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
-import { Clock, X, CreditCard, Banknote, Smartphone, Check, Users, UtensilsCrossed, ArrowLeft } from "lucide-react";
+import { Clock, X, CreditCard, Banknote, Smartphone, Check, Users, UtensilsCrossed } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import type { CafeTable, Order } from "@/types/database";
@@ -73,28 +73,15 @@ export default function POSPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="sticky top-0 z-20 bg-surface/80 backdrop-blur-md border-b border-border">
-        <div className="max-w-[1280px] mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Link href="/dashboard" className="hidden sm:flex items-center gap-2 text-sm text-text-secondary hover:text-text-primary">
-              <ArrowLeft className="w-4 h-4" /> Dashboard
-            </Link>
-            <div className="h-5 w-px bg-border hidden sm:block" />
-            <h1 className="font-semibold tracking-tight">Tables</h1>
-            <span className="hidden sm:inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full bg-surface-hover border border-border">
-              <span className="w-2 h-2 rounded-full bg-success animate-pulse" /> Live
-            </span>
-          </div>
-          <div className="flex items-center gap-2 text-xs">
-            <span className="hidden sm:inline text-text-muted">{stats.occ} occupied · {stats.avail} free · {stats.total} total</span>
-            <Link href="/kitchen" className="px-3 py-1.5 rounded-lg bg-accent text-white font-medium hover:bg-accent-hover transition-colors">Kitchen →</Link>
-          </div>
+    <div className="space-y-5">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2 text-xs">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface border border-border text-text-muted hidden sm:inline-flex"><span className="w-2 h-2 rounded-full bg-success animate-pulse" /> Live</span>
+          <span className="text-text-muted">{stats.occ} occupied · {stats.avail} free · {stats.total} total</span>
         </div>
-      </header>
-
-      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 py-6 space-y-5">
+        <Link href="/kitchen" className="px-3 py-1.5 rounded-lg bg-accent text-white text-xs font-medium hover:bg-accent-hover transition-colors">Kitchen →</Link>
+      </div>
+      <div className="space-y-5">
         {/* Legend + filters */}
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2 flex-wrap">

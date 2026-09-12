@@ -87,7 +87,7 @@ export default function KitchenPage() {
   }, []);
 
   useEffect(() => {
-    fetchKOTs();
+    void fetchKOTs();
     if (!isSupabaseConfigured) return;
     const ch = supabase.channel("kitchen-orders").on("postgres_changes", { event: "*", schema: "public", table: "orders" }, fetchKOTs).on("postgres_changes", { event: "*", schema: "public", table: "order_items" }, fetchKOTs).subscribe();
     return () => { supabase.removeChannel(ch); };
@@ -106,19 +106,14 @@ export default function KitchenPage() {
   const columns: KOT["status"][] = ["new", "preparing", "ready"];
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="sticky top-0 z-20 bg-background/80 backdrop-blur-md border-b border-border px-6 py-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-accent text-white"><ChefHat className="w-4 h-4" /></div>
-            <div><h1 className="text-lg font-semibold">Kitchen Display</h1><p className="text-xs text-text-muted">Live order queue</p></div>
-          </div>
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-warning/10 text-warning text-xs font-medium">
-            <Bell className="w-3.5 h-3.5" /> {kots.filter((k) => k.status === "new").length} new orders
-          </div>
+    <div className="space-y-5">
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-text-secondary">Live order queue</p>
+        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-warning/10 text-warning text-xs font-medium">
+          <Bell className="w-3.5 h-3.5" /> {kots.filter((k) => k.status === "new").length} new orders
         </div>
       </div>
-      <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {columns.map((col) => {
           const config = columnConfig[col];
           const colKots = kots.filter((k) => k.status === col);

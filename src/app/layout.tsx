@@ -32,10 +32,12 @@ export const viewport = {
   themeColor: "#D97706",
 };
 
+import { AuthProvider } from "@/components/auth/auth-provider";
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${inter.variable} ${playfair.variable} ${jetbrains.variable} h-full`}>
-      <body className="min-h-full bg-background text-text-primary antialiased">{children}</body>
+      <body className="min-h-full bg-background text-text-primary antialiased"><AuthProvider>{children}</AuthProvider></body>
     </html>
   );
 }

@@ -17,7 +17,7 @@ export default function LandingPage() {
             <Link href="/menu?table=1" className="hidden sm:inline-flex text-sm font-medium text-text-secondary hover:text-text-primary transition-colors">
               Customer demo
             </Link>
-            <Link href="/pos" className="text-sm font-medium px-4 py-2 rounded-full bg-primary text-white hover:bg-primary-hover transition-colors">
+            <Link href="/login" className="text-sm font-medium px-4 py-2 rounded-full bg-primary text-white hover:bg-primary-hover transition-colors">
               Staff Login
             </Link>
           </div>
@@ -42,8 +42,8 @@ export default function LandingPage() {
               <Link href="/menu?table=1" className="inline-flex items-center gap-2 px-6 py-3.5 rounded-full bg-accent text-white font-semibold hover:bg-accent-hover transition-colors shadow-sm">
                 Try Customer Menu <ArrowRight className="w-4 h-4" />
               </Link>
-              <Link href="/dashboard" className="inline-flex items-center gap-2 px-5 py-3.5 rounded-full border border-border bg-surface font-medium hover:bg-surface-hover transition-colors">
-                View Dashboard
+              <Link href="/login" className="inline-flex items-center gap-2 px-5 py-3.5 rounded-full border border-border bg-surface font-medium hover:bg-surface-hover transition-colors">
+                Staff Login
               </Link>
               <span className="text-xs text-text-muted flex items-center gap-1.5"><Clock3 className="w-3.5 h-3.5" /> No signup needed</span>
             </div>

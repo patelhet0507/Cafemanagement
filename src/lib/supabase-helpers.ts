@@ -56,13 +56,11 @@ export async function placeSupabaseOrder(args: {
   // upsert customer by phone
   let customerId: string | null = null;
   if (args.customerPhone) {
-    const { data: existing } = await supabase.from("customers").select("id").eq("phone", args.customerPhone).maybeSingle();
+    const { data: existing } = await supabase.from("customers").select("id, visit_count").eq("phone", args.customerPhone).maybeSingle();
     if (existing) {
-      customerId = (existing as { id: string }).id;
-      await supabase.from("customers").update({ visit_count: supabase.rpc as unknown as number, last_visit: new Date().toISOString() } as never).eq("id", customerId);
-      // fallback increment manually
-      const { data: c } = await supabase.from("customers").select("visit_count").eq("id", customerId).single();
-      if (c) await supabase.from("customers").update({ visit_count: (c as { visit_count: number }).visit_count + 1 } as never).eq("id", customerId);
+      const row = existing as { id: string; visit_count: number };
+      customerId = row.id;
+      await supabase.from("customers").update({ visit_count: row.visit_count + 1, last_visit: new Date().toISOString() } as never).eq("id", customerId);
     } else {
       const { data: created } = await supabase.from("customers").insert({ phone: args.customerPhone, visit_count: 1 } as never).select("id").single();
       if (created) customerId = (created as { id: string }).id;
@@ -82,6 +80,9 @@ export async function placeSupabaseOrder(args: {
     .single();
   if (oErr) throw oErr;
   const orderId = (order as { id: string }).id;
+
+  // occupy table
+  if (args.tableId) await supabase.from("tables").update({ status: "occupied" } as never).eq("id", args.tableId);
 
   if (args.items.length) {
     const rows = args.items.map((it) => ({

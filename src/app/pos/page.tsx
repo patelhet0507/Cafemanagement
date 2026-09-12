@@ -42,7 +42,7 @@ export default function POSPage() {
     "orders",
     mockOrders,
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    (q: any) => q.eq("payment_status", "unpaid").order("created_at", { ascending: false })
+    (q: any) => q.eq("payment_status", "unpaid").in("status", ["pending", "confirmed", "preparing", "ready"]).order("created_at", { ascending: false })
   );
 
   // realtime
@@ -173,7 +173,9 @@ export default function POSPage() {
           {filtered.map((table) => {
             const order = orders.find((o) => o.table_id === table.id);
             const hasOrder = !!order;
-            const cfg = statusConfig[hasOrder ? "occupied" : table.status] ?? statusConfig.available;
+            // instant available when no active (unpaid+pending/ready) order, even before tables.status updates
+            const displayStatus = hasOrder ? "occupied" : table.status === "reserved" ? "reserved" : "available";
+            const cfg = statusConfig[displayStatus] ?? statusConfig.available;
             const isSelected = selectedId === table.id;
             return (
               <div key={table.id} className="relative group">

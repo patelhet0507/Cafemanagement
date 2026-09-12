@@ -178,7 +178,7 @@ export default function MenuManagementPage() {
         if (error) throw error;
         setShowAdd(false); toast("Item added"); refetch();
       } else { toast("Supabase not configured", "error"); }
-    } catch (e) { toast(String(e instanceof Error ? e.message : e).includes("schema cache") ? "Schema cache stale — run NOTIFY pgrst, 'reload schema';" : String(e instanceof Error ? e.message : e), "error"); } finally { setSaving(false); }
+    } catch (e) { const m = (e as any)?.message ?? (e instanceof Error ? e.message : String(e)); toast(m.includes("schema cache") ? "Schema cache stale — run NOTIFY pgrst, 'reload schema';" : m, "error"); } finally { setSaving(false); }
   };
 
   const saveEdit = async () => {
@@ -191,7 +191,7 @@ export default function MenuManagementPage() {
         if (error) throw error;
         setEditing(null); toast("Item updated"); refetch();
       }
-    } catch (e) { toast(String(e instanceof Error ? e.message : e).includes("schema cache") ? "Schema cache stale — run NOTIFY pgrst, 'reload schema';" : String(e instanceof Error ? e.message : e), "error"); } finally { setSaving(false); }
+    } catch (e) { const m = (e as any)?.message ?? (e instanceof Error ? e.message : String(e)); toast(m.includes("schema cache") ? "Schema cache stale — run NOTIFY pgrst, 'reload schema';" : m, "error"); } finally { setSaving(false); }
   };
 
   return (

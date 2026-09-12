@@ -31,7 +31,8 @@ export function useSupabaseTable<T>(
       setData((rows as unknown as T[]) ?? []);
       setError(null);
     } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : String(e));
+      const msg = (e as { message?: string })?.message ?? (e instanceof Error ? e.message : String(e));
+      setError(msg);
       setData([]);
     } finally {
       setLoading(false);

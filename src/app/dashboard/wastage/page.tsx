@@ -51,7 +51,7 @@ export default function WastagePage() {
       setShowForm(false); setForm({ rm: "", qty: "", reason: "Spillage", by: "" });
       toast(isSupabaseConfigured ? "Wastage logged" : "Logged locally — set Supabase keys to persist");
     } catch (e) {
-      const msg = String(e instanceof Error ? e.message : e);
+      const msg = (e as any)?.message ?? (e instanceof Error ? e.message : String(e));
       toast(msg.includes("schema cache") ? "Schema cache stale — run NOTIFY pgrst, 'reload schema';" : msg, "error");
     } finally { setSaving(false); }
   };

@@ -49,7 +49,7 @@ export default function PurchasesPage() {
       setShowForm(false); setForm({ rm: "", qty: "", cost: "", supplier: "", invoice: "" });
       toast(isSupabaseConfigured ? "Purchase saved" : "Saved locally — set Supabase keys to persist");
     } catch (e) {
-      const msg = String(e instanceof Error ? e.message : e);
+      const msg = (e as any)?.message ?? (e instanceof Error ? e.message : String(e));
       toast(msg.includes("schema cache") ? "Schema cache stale — run NOTIFY pgrst, 'reload schema';" : msg, "error");
     } finally { setSaving(false); }
   };

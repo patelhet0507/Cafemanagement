@@ -84,7 +84,8 @@ function MenuContent() {
       setCart([]);
     } catch (e) {
       console.error(e);
-      alert("Order failed: " + (e instanceof Error ? e.message : String(e)));
+      const msg = (e as { message?: string })?.message ?? (e instanceof Error ? e.message : String(e));
+      alert("Order failed: " + msg);
     } finally {
       setPlacing(false);
     }

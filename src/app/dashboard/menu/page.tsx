@@ -8,6 +8,7 @@ import type { MenuItem } from "@/types/database";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { formatCurrency } from "@/lib/utils";
 import { Plus, ToggleLeft, ToggleRight, Pencil, Trash2, X, Upload, ImageIcon, Search, FolderPlus, ChevronDown, ChevronRight } from "lucide-react";
+import { MenuCard } from "@/components/menu/menu-card";
 import { ConfirmDialog } from "@/components/shared/confirm-dialog";
 import { useToast } from "@/components/shared/toaster";
 
@@ -247,25 +248,16 @@ export default function MenuManagementPage() {
                       <p className="text-xs text-text-muted">No items in {sec}. <button onClick={() => openAdd(sec)} className="text-accent font-medium hover:underline">Add one</button></p>
                     </div>
                   ) : (
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pt-3 border-t border-border">
+                    <div className="grid grid-cols-2 gap-3 pt-3 border-t border-border">
                       {secItems.map((item) => (
-                        <div key={item.id} className="bg-background rounded-xl border border-border overflow-hidden flex flex-col">
-                          <div className="h-28 overflow-hidden flex items-center justify-center bg-surface">
-                            {item.image_url ? <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" /> : <span className="text-2xl">{categoryEmoji[item.category] || "🍽️"}</span>}
-                          </div>
-                          <div className="p-3 flex-1 flex flex-col">
-                            <div className="flex items-start justify-between gap-2"><div><h4 className="font-semibold text-sm">{item.name}</h4><p className="text-[11px] text-text-muted">{item.category}</p></div><span className="font-mono text-sm font-semibold text-accent">{formatCurrency(item.price)}</span></div>
-                            <p className="text-xs text-text-muted mt-1 line-clamp-2 flex-1">{item.description}</p>
-                            <div className="flex items-center justify-between mt-3 pt-3 border-t border-border">
-                              <span className="text-[11px] text-text-muted">{item.prep_time_min} min</span>
-                              <button onClick={() => toggle(item)} className="flex items-center gap-1 text-xs font-medium">
-                                {item.is_available ? <><ToggleRight className="w-5 h-5 text-success" /><span className="text-success">Available</span></> : <><ToggleLeft className="w-5 h-5 text-text-muted" /><span className="text-text-muted">Unavailable</span></>}
-                              </button>
-                            </div>
-                            <div className="flex gap-2 mt-3">
-                              <button onClick={() => { setEditing(item); setForm({ name: item.name, description: item.description, price: String(item.price), category: item.category, image_url: item.image_url || "", prep_time_min: String(item.prep_time_min), is_available: item.is_available }); }} className="flex-1 flex items-center justify-center gap-1 py-2 rounded-xl border border-border hover:bg-surface-hover text-xs font-medium"><Pencil className="w-3.5 h-3.5" /> Edit</button>
-                              <button onClick={() => handleDelete(item)} className="flex-1 flex items-center justify-center gap-1 py-2 rounded-xl bg-error/10 text-error hover:bg-error hover:text-white text-xs font-medium"><Trash2 className="w-3.5 h-3.5" /> Delete</button>
-                            </div>
+                        <div key={item.id} className="flex flex-col gap-2">
+                          <MenuCard item={item} onAdd={() => toast("Customer preview")} />
+                          <div className="flex gap-2">
+                            <button onClick={() => toggle(item)} className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg border border-border bg-surface text-[11px] font-medium hover:bg-surface-hover">
+                              {item.is_available ? <><ToggleRight className="w-4 h-4 text-success" /> On</> : <><ToggleLeft className="w-4 h-4 text-text-muted" /> Off</>}
+                            </button>
+                            <button onClick={() => openEdit(item)} className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg border border-border bg-surface text-[11px] font-medium hover:bg-surface-hover"><Pencil className="w-3 h-3" /> Edit</button>
+                            <button onClick={() => handleDelete(item)} className="flex-1 flex items-center justify-center gap-1 py-1.5 rounded-lg bg-error/10 text-error hover:bg-error hover:text-white text-[11px] font-medium"><Trash2 className="w-3 h-3" /> Del</button>
                           </div>
                         </div>
                       ))}

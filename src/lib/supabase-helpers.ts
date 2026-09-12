@@ -79,21 +79,45 @@ export async function placeSupabaseOrder(args: {
     }
   }
 
-  const { data: order, error: oErr } = await supabase
-    .from("orders")
-    .insert({
-      table_id: validTableId,
-      customer_id: customerId,
-      status: args.paymentStatus === "paid" ? "paid" : "pending",
-      total: args.total,
-      payment_status: args.paymentStatus ?? "unpaid",
-      payment_method: args.paymentMethod ?? null,
-      order_type: args.orderType ?? (validTableId ? "dine_in" : "takeout"),
-    } as never)
-    .select("id")
-    .single();
+  let order: { id: string } | null = null;
+  let oErr: { message: string } | null = null;
+  // try with order_type, fallback without if migration not yet run
+  {
+    const res = await supabase
+      .from("orders")
+      .insert({
+        table_id: validTableId,
+        customer_id: customerId,
+        status: args.paymentStatus === "paid" ? "paid" : "pending",
+        total: args.total,
+        payment_status: args.paymentStatus ?? "unpaid",
+        payment_method: args.paymentMethod ?? null,
+        order_type: args.orderType ?? (validTableId ? "dine_in" : "takeout"),
+      } as never)
+      .select("id")
+      .single();
+    order = res.data as { id: string } | null;
+    oErr = res.error as { message: string } | null;
+    if (oErr && oErr.message.includes("order_type")) {
+      const retry = await supabase
+        .from("orders")
+        .insert({
+          table_id: validTableId,
+          customer_id: customerId,
+          status: args.paymentStatus === "paid" ? "paid" : "pending",
+          total: args.total,
+          payment_status: args.paymentStatus ?? "unpaid",
+          payment_method: args.paymentMethod ?? null,
+        } as never)
+        .select("id")
+        .single();
+      order = retry.data as { id: string } | null;
+      oErr = retry.error as { message: string } | null;
+    }
+  }
   if (oErr) throw oErr;
-  const orderId = (order as { id: string }).id;
+  if (!order) throw new Error("Order not created");
+  const orderId = order.id;
 
   // occupy table (best-effort)
   if (validTableId) await supabase.from("tables").update({ status: "occupied" } as never).eq("id", validTableId);

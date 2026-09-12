@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
+import { clientRateLimit } from "@/lib/rate-limit";
 
 // Generic fetch hook with mock fallback
 export function useSupabaseTable<T>(
@@ -55,6 +56,7 @@ export async function placeSupabaseOrder(args: {
   items: { id: string; price: number; quantity: number }[];
   total: number;
 }) {
+  if (!clientRateLimit(`order:${args.customerPhone ?? "anon"}`, 10, 60_000)) throw new Error("Rate limited — slow down");
   if (!isSupabaseConfigured) return { id: `mock_${Date.now()}`, mocked: true };
   // sanitize: mock IDs like "m1" are not UUIDs — drop them for DB calls
   const validTableId = args.tableId && isUuid(args.tableId) ? args.tableId : null;

@@ -13,13 +13,8 @@ export default function LandingPage() {
             <span className="font-semibold tracking-tight">CafeFlow</span>
             <span className="hidden sm:inline text-[10px] tracking-widest font-semibold text-text-muted border border-border rounded-full px-2 py-0.5 ml-2">FOR INDEPENDENT CAFES</span>
           </Link>
-          <div className="flex items-center gap-2 sm:gap-3">
-            <Link href="/scan" className="inline-flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-full border border-border bg-surface hover:bg-surface-hover">
-              <ScanLine className="w-4 h-4" /> Scan QR
-            </Link>
-            <Link href="/menu?table=1" className="text-sm font-medium px-4 py-2 rounded-full bg-accent text-white hover:bg-accent-hover transition-colors">
-              View Menu
-            </Link>
+          <div className="flex items-center gap-2">
+            <span className="hidden sm:inline text-xs text-text-muted">Customer ordering only — staff at <span className="font-mono">/login</span></span>
           </div>
         </div>
       </nav>

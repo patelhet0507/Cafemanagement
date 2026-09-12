@@ -2,6 +2,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { getStoredUser, setStoredUser, validateLogin, canAccess, PROTECTED_PREFIXES, type StaffUser } from "@/lib/auth";
+import { clientRateLimit } from "@/lib/rate-limit";
 
 type Ctx = { user: StaffUser | null; login: (e: string, p: string) => string | null; logout: () => void };
 const AuthCtx = createContext<Ctx>({ user: null, login: () => "not ready", logout: () => {} });
@@ -27,6 +28,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [user, pathname, ready, router]);
 
   const login = (email: string, pwd: string) => {
+    if (!clientRateLimit(`login:${email.toLowerCase()}`, 5, 60_000)) return "Too many attempts — wait a minute";
     const u = validateLogin(email, pwd);
     if (!u) return "Invalid email or password";
     setStoredUser(u); setUser(u); return null;

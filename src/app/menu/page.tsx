@@ -4,13 +4,15 @@ import { useState, useMemo, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { AnimatePresence } from "framer-motion";
 import { Coffee, ChevronRight } from "lucide-react";
-import { mockMenuItems, mockMenuCategories } from "@/lib/mock-data";
+import { mockMenuItems } from "@/lib/mock-data";
 import { PhoneEntryModal } from "@/components/menu/phone-entry-modal";
 import { MenuCard } from "@/components/menu/menu-card";
 import { CartBar } from "@/components/menu/cart-bar";
 import { CartSheet, type CartItem } from "@/components/menu/cart-sheet";
 import { OrderConfirmation } from "@/components/menu/order-confirmation";
 import { mockSendWhatsApp, getOrderConfirmationMessage } from "@/lib/mock-services";
+import { useSupabaseTable, placeSupabaseOrder } from "@/lib/supabase-helpers";
+import { isSupabaseConfigured } from "@/lib/supabase";
 import type { MenuItem } from "@/types/database";
 
 function MenuContent() {
@@ -23,11 +25,18 @@ function MenuContent() {
   const [cartOpen, setCartOpen] = useState(false);
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [orderTotal, setOrderTotal] = useState(0);
+  const [placing, setPlacing] = useState(false);
+
+  const { data: menuItems, loading: menuLoading } = useSupabaseTable<MenuItem>("menu_items", mockMenuItems, (q) => q.eq("is_available", true).order("category", { ascending: true }));
+  const categories = useMemo(() => {
+    const cats = Array.from(new Set(menuItems.map((m) => m.category)));
+    return ["Recommended", ...cats];
+  }, [menuItems]);
 
   const filteredItems = useMemo(() => {
-    if (activeCategory === "Recommended") return mockMenuItems.filter((_, i) => i < 6);
-    return mockMenuItems.filter((item) => item.category === activeCategory);
-  }, [activeCategory]);
+    if (activeCategory === "Recommended") return menuItems.slice(0, 6);
+    return menuItems.filter((item) => item.category === activeCategory);
+  }, [menuItems, activeCategory]);
 
   const cartCount = cart.reduce((sum, ci) => sum + ci.quantity, 0);
   const cartTotal = cart.reduce((sum, ci) => sum + ci.item.price * ci.quantity, 0);
@@ -45,13 +54,36 @@ function MenuContent() {
     else setCart((prev) => prev.map((ci) => ci.item.id === itemId ? { ...ci, quantity } : ci));
   };
 
-  const placeOrder = () => {
+  const placeOrder = async () => {
     const total = cartTotal + Math.round(cartTotal * 0.05);
-    setOrderTotal(total);
-    mockSendWhatsApp(phone!, getOrderConfirmationMessage(tableNumber, total));
-    setCartOpen(false);
-    setOrderPlaced(true);
-    setCart([]);
+    setPlacing(true);
+    try {
+      if (isSupabaseConfigured) {
+        // map table number -> uuid if available
+        let tableId: string | null = null;
+        try {
+          const { supabase } = await import("@/lib/supabase");
+          const { data: t } = await supabase.from("tables").select("id").eq("number", tableNumber).maybeSingle();
+          if (t) tableId = (t as { id: string }).id;
+        } catch {}
+        await placeSupabaseOrder({
+          tableId,
+          customerPhone: phone,
+          items: cart.map((c) => ({ id: c.item.id, price: c.item.price, quantity: c.quantity })),
+          total,
+        });
+      }
+      mockSendWhatsApp(phone!, getOrderConfirmationMessage(tableNumber, total));
+      setOrderTotal(total);
+      setCartOpen(false);
+      setOrderPlaced(true);
+      setCart([]);
+    } catch (e) {
+      console.error(e);
+      alert("Order failed: " + (e instanceof Error ? e.message : String(e)));
+    } finally {
+      setPlacing(false);
+    }
   };
 
   if (orderPlaced) return <OrderConfirmation tableNumber={tableNumber} total={orderTotal} onBack={() => setOrderPlaced(false)} />;
@@ -74,7 +106,7 @@ function MenuContent() {
         </div>
         <div className="max-w-2xl mx-auto px-4 pb-3">
           <div className="flex gap-1.5 overflow-x-auto no-scrollbar -mx-1 px-1">
-            {mockMenuCategories.map((cat) => (
+            {categories.map((cat) => (
               <button key={cat} onClick={() => setActiveCategory(cat)}
                 className={`shrink-0 px-3.5 py-1.5 rounded-full text-xs font-medium transition-all ${activeCategory === cat ? "bg-primary text-white" : "bg-surface-hover text-text-secondary hover:bg-border"}`}>
                 {cat}
@@ -85,9 +117,11 @@ function MenuContent() {
       </header>
 
       <main className="max-w-2xl mx-auto px-4 py-4 pb-24">
+        {menuLoading ? <p className="text-sm text-text-muted text-center py-8">Loading menu…</p> : null}
         <div className="grid grid-cols-2 gap-3">
           {filteredItems.map((item) => <MenuCard key={item.id} item={item} onAdd={addToCart} />)}
         </div>
+        {placing ? <p className="text-xs text-center text-text-muted mt-3">Placing order…</p> : null}
       </main>
 
       <AnimatePresence>

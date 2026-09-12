@@ -1,12 +1,14 @@
 ﻿"use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { cn, formatCurrency } from "@/lib/utils";
 import { mockTables, mockOrders } from "@/lib/mock-data";
+import { useSupabaseTable } from "@/lib/supabase-helpers";
+import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { Clock, X, CreditCard, Banknote, Smartphone, Check, Users, UtensilsCrossed, ArrowLeft } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
-import type { CafeTable } from "@/types/database";
+import type { CafeTable, Order } from "@/types/database";
 
 const statusConfig: Record<string, { label: string; dot: string; bg: string; border: string }> = {
   available: { label: "Available", dot: "bg-table-available", bg: "bg-table-available/[0.07]", border: "border-table-available/20" },
@@ -26,16 +28,49 @@ export default function POSPage() {
   const [payMethod, setPayMethod] = useState<string>("cash");
   const [paid, setPaid] = useState<Set<string>>(new Set());
 
-  const filtered = useMemo(() => filter === "all" ? mockTables : mockTables.filter(t => t.status === filter), [filter]);
-  const selected = selectedId ? mockTables.find(t => t.id === selectedId) ?? null : null;
-  const selectedOrder = selected ? mockOrders.find(o => o.table_id === selected.id) : null;
+  const { data: tables } = useSupabaseTable<CafeTable>("tables", mockTables);
+  const { data: orders, refetch: refetchOrders } = useSupabaseTable<Order>(
+    "orders",
+    mockOrders,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (q: any) => q.eq("payment_status", "unpaid").order("created_at", { ascending: false })
+  );
+
+  // realtime unpaid orders
+  useEffect(() => {
+    if (!isSupabaseConfigured) return;
+    const ch = supabase
+      .channel("pos-orders")
+      .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, () => refetchOrders())
+      .subscribe();
+    return () => {
+      supabase.removeChannel(ch);
+    };
+  }, [refetchOrders]);
+
+  const filtered = useMemo(() => filter === "all" ? tables : tables.filter((t) => t.status === filter), [tables, filter]);
+  const selected = selectedId ? tables.find((t) => t.id === selectedId) ?? null : null;
+  const selectedOrder = selected ? orders.find((o) => o.table_id === selected.id) : null;
   const isPaid = selected ? paid.has(selected.id) : false;
 
-  const stats = useMemo(() => ({
-    total: mockTables.length,
-    avail: mockTables.filter(t => t.status === "available").length,
-    occ: mockTables.filter(t => t.status === "occupied").length,
-  }), []);
+  const stats = useMemo(
+    () => ({
+      total: tables.length,
+      avail: tables.filter((t) => t.status === "available").length,
+      occ: tables.filter((t) => t.status === "occupied").length,
+    }),
+    [tables]
+  );
+
+  const markPaid = async () => {
+    if (!selected || !selectedOrder) return;
+    if (isSupabaseConfigured) {
+      await supabase.from("orders").update({ payment_status: "paid", payment_method: payMethod, status: "paid" } as never).eq("id", selectedOrder.id);
+      await supabase.from("tables").update({ status: "available" } as never).eq("id", selected.id);
+    }
+    setPaid((s) => new Set(s).add(selected.id));
+    setTimeout(() => setSelectedId(null), 600);
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -81,7 +116,7 @@ export default function POSPage() {
         {/* Grid */}
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-3 sm:gap-4">
           {filtered.map((table) => {
-            const order = mockOrders.find(o => o.table_id === table.id);
+            const order = orders.find((o) => o.table_id === table.id);
             const hasOrder = !!order && !paid.has(table.id);
             const cfg = statusConfig[hasOrder ? "occupied" : table.status] ?? statusConfig.available;
             const isSelected = selectedId === table.id;
@@ -179,7 +214,7 @@ export default function POSPage() {
 
               {selectedOrder && !isPaid && (
                 <div className="p-5 border-t border-border space-y-2">
-                  <button onClick={() => { setPaid(s => new Set(s).add(selected.id)); setTimeout(() => setSelectedId(null), 600); }}
+                  <button onClick={markPaid}
                     className="w-full py-3 rounded-xl bg-success text-white font-semibold hover:bg-success/90 transition-colors flex items-center justify-center gap-2">
                     <Check className="w-4 h-4" /> Mark Paid — {formatCurrency(selectedOrder.total)}
                   </button>

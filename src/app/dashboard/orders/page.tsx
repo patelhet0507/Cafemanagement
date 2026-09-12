@@ -1,8 +1,10 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { PageHeader } from "@/components/shared/page-header";
 import { cn } from "@/lib/utils";
 import { mockRecentOrders } from "@/lib/mock-data";
+import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { Search, Filter, Download } from "lucide-react";
 
 const statusColors: Record<string, string> = {
@@ -13,6 +15,17 @@ const statusColors: Record<string, string> = {
 };
 
 export default function OrdersPage() {
+  const [orders, setOrders] = useState(mockRecentOrders);
+  useEffect(() => {
+    if (!isSupabaseConfigured) return;
+    (async () => {
+      const { data } = await supabase.from("orders").select("id, status, total, created_at, table_id").order("created_at", { ascending: false }).limit(20);
+      if (!data?.length) return;
+      const { data: tables } = await supabase.from("tables").select("id, number");
+      const tmap = new Map((tables as { id: string; number: number }[] | null)?.map((t) => [t.id, t.number]) ?? []);
+      setOrders((data as { id: string; status: string; total: number; created_at: string; table_id: string }[]).map((o) => ({ id: o.id.slice(0, 5), table: tmap.get(o.table_id) ?? 0, items: "", amount: Number(o.total), status: o.status as (typeof mockRecentOrders)[number]["status"], time: new Date(o.created_at).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }) })));
+    })();
+  }, []);
   return (
     <div>
       <PageHeader title="Orders" description="View and manage all orders">
@@ -43,7 +56,7 @@ export default function OrdersPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {mockRecentOrders.map((o) => (
+              {orders.map((o) => (
                 <tr key={o.id} className="hover:bg-surface-hover transition-colors">
                   <td className="px-5 py-3 font-mono font-medium">#{o.id}</td>
                   <td className="px-5 py-3">T{o.table}</td>

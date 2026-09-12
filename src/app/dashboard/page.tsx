@@ -10,6 +10,8 @@ import {
   mockRevenueData,
   mockCategoryData,
 } from "@/lib/mock-data";
+import { useEffect, useState } from "react";
+import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import {
   IndianRupee,
   ShoppingBag,
@@ -20,7 +22,28 @@ import {
 } from "lucide-react";
 
 export default function DashboardPage() {
-  const stats = mockDashboardStats;
+  const [stats, setStats] = useState(mockDashboardStats);
+  const [recent, setRecent] = useState(mockRecentOrders);
+  useEffect(() => {
+    if (!isSupabaseConfigured) return;
+    (async () => {
+      const today = new Date().toISOString().slice(0, 10);
+      const { data: orders } = await supabase.from("orders").select("total, status, payment_status, created_at, table_id").gte("created_at", today);
+      if (orders?.length) {
+        const todays = orders as { total: number; status: string; payment_status: string; created_at: string; table_id: string }[];
+        const sales = todays.filter((o) => o.payment_status === "paid").reduce((s, o) => s + Number(o.total), 0) || todays.reduce((s, o) => s + Number(o.total), 0);
+        const unpaid = todays.filter((o) => o.payment_status === "unpaid").reduce((s, o) => s + Number(o.total), 0);
+        const active = new Set(todays.filter((o) => o.payment_status === "unpaid").map((o) => o.table_id)).size;
+        setStats((p) => ({ ...p, todaysSales: Math.round(sales), todaysOrders: todays.length, avgOrderValue: todays.length ? Math.round(sales / todays.length) : p.avgOrderValue, activeTables: active, unpaidBills: Math.round(unpaid) }));
+      }
+      const { data: recentLive } = await supabase.from("orders").select("id, total, status, created_at, table_id").order("created_at", { ascending: false }).limit(5);
+      if (recentLive?.length) {
+        const { data: tables } = await supabase.from("tables").select("id, number");
+        const tmap = new Map((tables as { id: string; number: number }[] | null)?.map((t) => [t.id, t.number]) ?? []);
+        setRecent((recentLive as { id: string; total: number; status: string; created_at: string; table_id: string }[]).map((o) => ({ id: o.id.slice(0, 5), table: tmap.get(o.table_id) ?? 0, items: "", amount: Math.round(Number(o.total)), status: o.status as (typeof mockRecentOrders)[number]["status"], time: new Date(o.created_at).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }) })));
+      }
+    })();
+  }, []);
 
   return (
     <div className="space-y-6">
@@ -83,7 +106,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Recent Orders */}
-      <RecentOrders orders={mockRecentOrders} />
+      <RecentOrders orders={recent} />
     </div>
   );
 }

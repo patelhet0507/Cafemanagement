@@ -1,9 +1,10 @@
 ﻿"use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Play, Check, ChefHat, Bell } from "lucide-react";
+import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 
 interface KOT {
   id: string;
@@ -60,9 +61,47 @@ function KOTCard({ kot, onMove }: { kot: KOT; onMove: (id: string, status: KOT["
 }
 
 export default function KitchenPage() {
-  const [kots, setKots] = useState(initialKOTs);
-  const moveKOT = (id: string, status: KOT["status"]) => {
-    setKots((prev) => prev.map((k) => k.id === id ? { ...k, status } : k));
+  const [kots, setKots] = useState<KOT[]>(initialKOTs);
+
+  const fetchKOTs = useCallback(async () => {
+    if (!isSupabaseConfigured) return;
+    const { data: orders } = await supabase.from("orders").select("id, status, table_id, created_at").in("status", ["pending", "confirmed", "preparing", "ready"]).order("created_at", { ascending: true }).limit(20);
+    if (!orders) return;
+    const ids = (orders as { id: string }[]).map((o) => o.id);
+    const { data: items } = ids.length ? await supabase.from("order_items").select("order_id, quantity, menu_item_id").in("order_id", ids) : { data: [] as unknown[] };
+    const { data: menu } = await supabase.from("menu_items").select("id, name");
+    const { data: tables } = await supabase.from("tables").select("id, number");
+    const menuMap = new Map((menu as { id: string; name: string }[] | null)?.map((m) => [m.id, m.name]) ?? []);
+    const tableMap = new Map((tables as { id: string; number: number }[] | null)?.map((t) => [t.id, t.number]) ?? []);
+    const statusMap = (s: string): KOT["status"] => (s === "pending" || s === "confirmed" ? "new" : s === "preparing" ? "preparing" : "ready");
+    const grouped = new Map<string, KOT>();
+    for (const o of orders as { id: string; status: string; table_id: string; created_at: string }[]) {
+      grouped.set(o.id, { id: o.id.slice(0, 5), table: tableMap.get(o.table_id) ?? 0, items: [], time: new Date(o.created_at).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }), status: statusMap(o.status) });
+    }
+    for (const it of (items as { order_id: string; quantity: number; menu_item_id: string }[] | null) ?? []) {
+      const kot = grouped.get(it.order_id);
+      if (kot) kot.items.push({ name: menuMap.get(it.menu_item_id) ?? "Item", qty: it.quantity });
+    }
+    const live = Array.from(grouped.values()).filter((k) => k.items.length > 0);
+    if (live.length) setKots(live);
+  }, []);
+
+  useEffect(() => {
+    fetchKOTs();
+    if (!isSupabaseConfigured) return;
+    const ch = supabase.channel("kitchen-orders").on("postgres_changes", { event: "*", schema: "public", table: "orders" }, fetchKOTs).on("postgres_changes", { event: "*", schema: "public", table: "order_items" }, fetchKOTs).subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [fetchKOTs]);
+
+  const moveKOT = async (id: string, status: KOT["status"]) => {
+    // optimistic
+    setKots((prev) => prev.map((k) => (k.id === id ? { ...k, status } : k)));
+    if (!isSupabaseConfigured) return;
+    // find full uuid by prefix
+    const { data: match } = await supabase.from("orders").select("id").ilike("id", `${id}%`).maybeSingle();
+    const fullId = (match as { id: string } | null)?.id ?? id;
+    const dbStatus = status === "new" ? "pending" : status === "preparing" ? "preparing" : "ready";
+    await supabase.from("orders").update({ status: dbStatus } as never).eq("id", fullId);
   };
   const columns: KOT["status"][] = ["new", "preparing", "ready"];
 

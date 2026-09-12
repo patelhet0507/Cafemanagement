@@ -77,7 +77,7 @@ export default function KitchenPage() {
   const fetchKOTs = useCallback(async () => {
     if (!isSupabaseConfigured) return;
     const { data: orders } = await supabase.from("orders").select("id, status, table_id, created_at").in("status", ["pending", "confirmed", "preparing", "ready"]).order("created_at", { ascending: true }).limit(24);
-    if (!orders?.length) return;
+    if (!orders?.length) { setKots([]); return; }
     const ids = (orders as { id: string }[]).map((o) => o.id);
     const { data: items } = ids.length ? await supabase.from("order_items").select("order_id, quantity, menu_item_id").in("order_id", ids) : { data: [] as unknown[] };
     const { data: menu } = await supabase.from("menu_items").select("id, name");

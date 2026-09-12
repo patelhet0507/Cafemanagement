@@ -40,7 +40,7 @@ function MenuContent() {
   const toast = useToast();
 
   const { data: liveItems, loading: menuLoading } = useSupabaseTable<MenuItem>("menu_items", mockMenuItems, (q) => q.eq("is_available", true).order("category", { ascending: true }));
-  const menuItems = liveItems.length ? liveItems : mockMenuItems;
+  const menuItems = isSupabaseConfigured ? liveItems : mockMenuItems;
   const categories = useMemo(() => {
     const cats = Array.from(new Set(menuItems.map((m) => m.category)));
     return ["Recommended", ...cats];

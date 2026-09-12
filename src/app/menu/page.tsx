@@ -44,9 +44,18 @@ function MenuContent() {
 
   const addToCart = (item: MenuItem) => {
     setCart((prev) => {
-      const existing = prev.find((ci) => ci.item.id === item.id);
-      if (existing) return prev.map((ci) => ci.item.id === item.id ? { ...ci, quantity: ci.quantity + 1 } : ci);
-      return [...prev, { item, quantity: 1 }];
+      const wasEmpty = prev.length === 0;
+      const next = (() => {
+        const existing = prev.find((ci) => ci.item.id === item.id);
+        if (existing) return prev.map((ci) => ci.item.id === item.id ? { ...ci, quantity: ci.quantity + 1 } : ci);
+        return [...prev, { item, quantity: 1 }];
+      })();
+      if (wasEmpty && isSupabaseConfigured) {
+        import("@/lib/supabase").then(({ supabase }) => {
+          supabase.from("tables").update({ status: "occupied" } as never).eq("number", tableNumber).then(() => {});
+        });
+      }
+      return next;
     });
   };
 
@@ -55,7 +64,7 @@ function MenuContent() {
     else setCart((prev) => prev.map((ci) => ci.item.id === itemId ? { ...ci, quantity } : ci));
   };
 
-  const placeOrder = async (total: number) => {
+  const placeOrder = async (total: number, method: "upi" | "counter" = "counter") => {
     if (isSupabaseConfigured && menuItems.length === 0) { alert("Menu not seeded — add items in Dashboard → Menu"); return; }
     setPlacing(true);
     try {
@@ -72,12 +81,14 @@ function MenuContent() {
             customerPhone: phone,
             items: cart.map((c) => ({ id: c.item.id, price: c.item.price, quantity: c.quantity })),
             total,
+            paymentMethod: method === "upi" ? "upi" : null,
+            paymentStatus: method === "upi" ? "paid" : "unpaid",
           });
         } catch (e) {
           console.warn("Supabase place failed, falling back to mock:", e);
         }
       }
-      mockSendWhatsApp(phone!, getOrderConfirmationMessage(tableNumber, total));
+      mockSendWhatsApp(phone!, getOrderConfirmationMessage(tableNumber, total) + (method === "upi" ? " (Paid via UPI)" : " (Pay at counter)"));
       setOrderTotal(total);
       setCartOpen(false);
       setOrderPlaced(true);

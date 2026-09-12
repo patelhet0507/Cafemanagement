@@ -56,7 +56,7 @@ const navSections = [
       { href: "/dashboard/customers", label: "Customers", icon: Users },
       { href: "/dashboard/variance", label: "Reports", icon: BarChart3 },
       { href: "/dashboard/customers", label: "Staff", icon: UserCog, soon: true },
-      { href: "/dashboard/inventory", label: "Settings", icon: Settings, soon: true },
+      { href: "/dashboard/settings", label: "Settings", icon: Settings },
     ],
   },
 ];

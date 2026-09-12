@@ -34,13 +34,10 @@ export default function LandingPage() {
               tells you what to reorder before you run out.
             </p>
             <div className="flex flex-wrap items-center gap-3 mt-8">
-              <Link href="/menu?table=1" className="inline-flex items-center gap-2 px-6 py-3.5 rounded-full bg-accent text-white font-semibold hover:bg-accent-hover transition-colors shadow-sm">
+              <Link href="/scan" className="inline-flex items-center gap-2 px-6 py-3.5 rounded-full bg-accent text-white font-semibold hover:bg-accent-hover transition-colors shadow-sm">
                 Try Customer Menu <ArrowRight className="w-4 h-4" />
               </Link>
-              <Link href="/scan" className="inline-flex items-center gap-2 px-5 py-3.5 rounded-full border border-border bg-surface font-medium hover:bg-surface-hover transition-colors">
-                <ScanLine className="w-4 h-4" /> Scan QR
-              </Link>
-              <span className="text-xs text-text-muted flex items-center gap-1.5"><Clock3 className="w-3.5 h-3.5" /> No app needed</span>
+              <span className="text-xs text-text-muted flex items-center gap-1.5"><QrCode className="w-3.5 h-3.5" /> Scan table QR to order</span>
             </div>
 
             <div className="mt-10 flex flex-wrap gap-6 text-sm border-t border-border pt-6">
@@ -105,7 +102,7 @@ export default function LandingPage() {
                 <li>• WhatsApp confirmation, KOT to kitchen</li>
                 <li>• Works on any phone — no app install</li>
               </ul>
-              <Link href="/menu?table=1" className="mt-6 inline-flex items-center gap-1.5 text-sm font-semibold text-white underline underline-offset-4 decoration-white/30 hover:decoration-white">Open customer menu →</Link>
+              <Link href="/scan" className="mt-6 inline-flex items-center gap-1.5 text-sm font-semibold text-white underline underline-offset-4 decoration-white/30 hover:decoration-white">Scan QR to order →</Link>
             </div>
             <div className="grid grid-rows-2 gap-6">
               <div className="rounded-[24px] border border-border bg-surface p-7">

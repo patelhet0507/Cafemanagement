@@ -2,9 +2,10 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { useState } from "react";
-import { X, Minus, Plus, ShoppingBag, Trash2, Tag } from "lucide-react";
+import { X, Minus, Plus, ShoppingBag, Trash2, Tag, Smartphone, Banknote } from "lucide-react";
 import { formatCurrency } from "@/lib/utils";
 import type { MenuItem } from "@/types/database";
+import { useUpiQr } from "@/lib/settings";
 
 export interface CartItem {
   item: MenuItem;
@@ -16,11 +17,13 @@ interface CartSheetProps {
   onClose: () => void;
   items: CartItem[];
   onUpdateQuantity: (itemId: string, quantity: number) => void;
-  onPlaceOrder: (total: number) => void;
+  onPlaceOrder: (total: number, method: "upi" | "counter") => void;
 }
 
 export function CartSheet({ open, onClose, items, onUpdateQuantity, onPlaceOrder }: CartSheetProps) {
+  const upiQr = useUpiQr();
   const [coupon, setCoupon] = useState("");
+  const [showUpi, setShowUpi] = useState(false);
   const couponDiscount = coupon.toUpperCase() === "WELCOME10" ? Math.round((items.reduce((s, ci) => s + ci.item.price * ci.quantity, 0)) * 0.1) : 0;
   const subtotal = items.reduce((sum, ci) => sum + ci.item.price * ci.quantity, 0);
   const tax = Math.round(subtotal * 0.05);
@@ -32,7 +35,8 @@ export function CartSheet({ open, onClose, items, onUpdateQuantity, onPlaceOrder
   if (!open) return null;
 
   return (
-    <AnimatePresence>
+    <>
+      <AnimatePresence>
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -118,16 +122,37 @@ export function CartSheet({ open, onClose, items, onUpdateQuantity, onPlaceOrder
                   <span className="font-mono">{formatCurrency(total)}</span>
                 </div>
               </div>
-              <button
-                onClick={() => onPlaceOrder(total)}
-                className="w-full py-3.5 rounded-xl bg-accent text-white font-semibold hover:bg-accent-hover transition-colors"
-              >
-                Place Order — {formatCurrency(total)}
-              </button>
+              <div className="grid grid-cols-2 gap-2">
+                <button onClick={() => setShowUpi(true)} className="flex items-center justify-center gap-1.5 py-3 rounded-xl bg-primary text-white font-semibold hover:bg-primary-hover text-sm"><Smartphone className="w-4 h-4" /> Pay Now</button>
+                <button onClick={() => onPlaceOrder(total, "counter")} className="flex items-center justify-center gap-1.5 py-3 rounded-xl border border-border bg-surface font-semibold hover:bg-surface-hover text-sm"><Banknote className="w-4 h-4" /> At Counter</button>
+              </div>
+              <p className="text-[11px] text-center text-text-muted">Pay Now shows UPI QR • At Counter pay when collecting</p>
             </div>
           )}
         </motion.div>
-      </motion.div>
-    </AnimatePresence>
+        </motion.div>
+      </AnimatePresence>
+      {showUpi && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setShowUpi(false)}>
+          <div className="w-full max-w-sm bg-surface rounded-2xl shadow-2xl overflow-hidden" onClick={(e) => e.stopPropagation()}>
+            <div className="bg-primary text-white px-6 py-4 text-center">
+              <h3 className="font-semibold">Pay Now — UPI</h3>
+              <p className="text-xs opacity-80">Scan QR to pay {formatCurrency(total)}</p>
+            </div>
+            <div className="p-6 text-center">
+              <div className="w-64 h-64 mx-auto rounded-2xl border-2 border-border bg-white p-3 flex items-center justify-center">
+                {upiQr ? <img src={upiQr} alt="UPI QR" className="w-full h-full object-contain" /> : <span className="text-xs text-text-muted">No UPI QR set — owner adds in Dashboard → Settings</span>}
+              </div>
+              <p className="text-sm font-mono font-semibold mt-3">{formatCurrency(total)}</p>
+              <p className="text-xs text-text-muted mt-1">After payment, tap Confirm</p>
+            </div>
+            <div className="flex gap-2 p-4 border-t border-border">
+              <button onClick={() => { setShowUpi(false); onPlaceOrder(total, "upi"); }} className="flex-1 py-2.5 rounded-xl bg-success text-white font-semibold hover:bg-success/90">I’ve Paid — Confirm</button>
+              <button onClick={() => setShowUpi(false)} className="px-4 py-2.5 rounded-xl border border-border text-sm">Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

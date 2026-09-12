@@ -55,6 +55,8 @@ export async function placeSupabaseOrder(args: {
   customerPhone: string | null;
   items: { id: string; price: number; quantity: number }[];
   total: number;
+  paymentMethod?: string | null;
+  paymentStatus?: "paid" | "unpaid";
 }) {
   if (!clientRateLimit(`order:${args.customerPhone ?? "anon"}`, 10, 60_000)) throw new Error("Rate limited — slow down");
   if (!isSupabaseConfigured) return { id: `mock_${Date.now()}`, mocked: true };
@@ -81,9 +83,10 @@ export async function placeSupabaseOrder(args: {
     .insert({
       table_id: validTableId,
       customer_id: customerId,
-      status: "pending",
+      status: args.paymentStatus === "paid" ? "paid" : "pending",
       total: args.total,
-      payment_status: "unpaid",
+      payment_status: args.paymentStatus ?? "unpaid",
+      payment_method: args.paymentMethod ?? null,
     } as never)
     .select("id")
     .single();

@@ -55,7 +55,9 @@ export default function POSPage() {
 
   useEffect(() => {
     if (!qrTable) { setQrDataUrl(""); return; }
-    const base = process.env.NEXT_PUBLIC_APP_URL || (typeof window !== "undefined" ? window.location.origin : "");
+    // Always encode production URL so phone scanning localhost QR still works
+    const prod = "https://cafemanagement-flame.vercel.app";
+    const base = process.env.NEXT_PUBLIC_APP_URL && !process.env.NEXT_PUBLIC_APP_URL.includes("localhost") ? process.env.NEXT_PUBLIC_APP_URL : prod;
     const url = `${base}/menu?table=${qrTable.number}`;
     import("qrcode").then(({ default: QRCode }) => {
       QRCode.toDataURL(url, { width: 280, margin: 1, color: { dark: "#1C1917", light: "#FFFFFF" } }).then(setQrDataUrl).catch(() => setQrDataUrl(""));
@@ -245,7 +247,7 @@ export default function POSPage() {
               </div>
               <h4 className="font-bold text-lg mt-4">Table {String(qrTable.number).padStart(2, "0")} — {qrTable.name}</h4>
               <p className="text-xs text-text-muted mt-1">{qrTable.capacity} seats • Scan to view menu & order</p>
-              <p className="text-[11px] font-mono bg-surface-hover border border-border rounded-full inline-block px-3 py-1 mt-3">{process.env.NEXT_PUBLIC_APP_URL || (typeof window !== "undefined" ? window.location.origin : "")}/menu?table={qrTable.number}</p>
+              <p className="text-[11px] font-mono bg-surface-hover border border-border rounded-full inline-block px-3 py-1 mt-3">https://cafemanagement-flame.vercel.app/menu?table={qrTable.number}</p>
             </div>
             <div className="flex gap-2 p-4 border-t border-border bg-background">
               <button onClick={() => { const el = document.getElementById("qr-print-area"); if (!el) return; const w = window.open("", "_blank"); if (!w) return; w.document.write(`<html><head><title>Table ${qrTable.number} QR</title><style>body{font-family:system-ui;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;background:#FDFBF7} .card{background:white;border-radius:24px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.15);max-width:380px;width:100%}</style></head><body><div class="card">${el.innerHTML}</div></body></html>`); w.document.close(); setTimeout(() => w.print(), 300); }} className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-accent text-white font-semibold hover:bg-accent-hover"><Printer className="w-4 h-4" /> Print QR</button>

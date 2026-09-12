@@ -13,34 +13,38 @@ export default function ScanPage() {
   const scannerRef = useRef<{ clear: () => Promise<void> } | null>(null);
 
   const goTable = async (n: string) => {
-    const num = parseInt(n);
+    const num = parseInt(String(n).trim());
     if (!num || num < 1 || num > 100) { setError("Enter table 1-100"); return; }
-    // occupied check for dine-in
+    setError(null);
     try {
       const { supabase } = await import("@/lib/supabase");
-      const { data } = await supabase.from("tables").select("status").eq("number", num).maybeSingle();
-      if ((data as { status: string } | null)?.status === "occupied") {
+      const { data, error } = await supabase.from("tables").select("status").eq("number", num).maybeSingle();
+      if (!error && (data as { status: string } | null)?.status === "occupied") {
         setError(`Table ${String(num).padStart(2, "0")} is occupied — ask staff or choose another table.`);
         return;
       }
     } catch {}
-    router.push(`/menu?table=${num}`);
+    // Use window.location.href for hard navigation to avoid Next router cache issues on Vercel
+    window.location.href = `/menu?table=${num}`;
   };
 
   const handleScan = (decoded: string) => {
+    const raw = String(decoded).trim();
+    // If QR is full URL like https://cafemanagement-flame.vercel.app/menu?table=8, extract directly
     try {
-      // try to extract table number from URL or plain number
-      const url = new URL(decoded, window.location.origin);
-      const t = url.searchParams.get("table");
-      if (t) return goTable(t);
-      const num = decoded.match(/\d+/);
-      if (num) return goTable(num[0]);
-      goTable(decoded);
-    } catch {
-      const num = decoded.match(/\d+/);
-      if (num) goTable(num[0]);
-      else setError(`Scanned: ${decoded}`);
-    }
+      if (raw.startsWith("http")) {
+        const url = new URL(raw);
+        const t = url.searchParams.get("table");
+        if (t) return goTable(t);
+      }
+      const url2 = new URL(raw, window.location.origin);
+      const t2 = url2.searchParams.get("table");
+      if (t2) return goTable(t2);
+    } catch {}
+    const num = raw.match(/\d+/);
+    if (num) return goTable(num[0]);
+    // fallback: show raw with link
+    setError(`Scanned: ${raw} — `);
   };
 
   useEffect(() => {

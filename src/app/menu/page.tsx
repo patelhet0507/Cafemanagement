@@ -18,7 +18,6 @@ import type { MenuItem } from "@/types/database";
 function MenuContent() {
   const searchParams = useSearchParams();
   const tableNumber = parseInt(searchParams.get("table") || "1");
-  const isDemo = searchParams.get("demo") === "1";
 
   const [phone, setPhone] = useState<string | null>(null);
   const [activeCategory, setActiveCategory] = useState("Recommended");
@@ -28,9 +27,7 @@ function MenuContent() {
   const [orderTotal, setOrderTotal] = useState(0);
   const [placing, setPlacing] = useState(false);
 
-  const { data: liveItems, loading: menuLoading } = useSupabaseTable<MenuItem>("menu_items", mockMenuItems, (q) => q.eq("is_available", true).order("category", { ascending: true }));
-  // always show something for customer — fallback to mocks if Supabase empty (dashboard stays strict)
-  const menuItems = isDemo ? mockMenuItems : (liveItems.length ? liveItems : menuLoading ? [] : mockMenuItems);
+  const { data: menuItems, loading: menuLoading } = useSupabaseTable<MenuItem>("menu_items", mockMenuItems, (q) => q.eq("is_available", true).order("category", { ascending: true }));
   const categories = useMemo(() => {
     const cats = Array.from(new Set(menuItems.map((m) => m.category)));
     return ["Recommended", ...cats];
@@ -136,6 +133,7 @@ function MenuContent() {
 
       <main className="max-w-2xl mx-auto px-4 py-4 pb-24">
         {menuLoading ? <p className="text-sm text-text-muted text-center py-8">Loading menu…</p> : null}
+        {!menuLoading && menuItems.length === 0 && <p className="text-sm text-text-muted text-center py-12">No menu items — add items in Dashboard → Menu (Supabase live).</p>}
         <div className="grid grid-cols-2 gap-3">
           {filteredItems.map((item) => <MenuCard key={item.id} item={item} onAdd={addToCart} />)}
         </div>

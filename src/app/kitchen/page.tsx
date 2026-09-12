@@ -85,9 +85,9 @@ export default function KitchenPage() {
       const kot = grouped.get(it.order_id);
       if (kot) kot.items.push({ name: menuMap.get(it.menu_item_id) ?? "Item", qty: it.quantity });
     }
-    const live = Array.from(grouped.values()).filter((k) => k.items.length > 0);
-    if (live.length) setKots(live);
-    else setKots([]);
+    const live = Array.from(grouped.values());
+    // show all orders, even if items not yet loaded (helps debug)
+    setKots(live.length ? live : []);
   }, []);
 
   useEffect(() => {
@@ -98,16 +98,14 @@ export default function KitchenPage() {
   }, [fetchKOTs]);
 
   const moveKOT = async (fullId: string, status: KOT["status"]) => {
-    setKots((prev) => prev.map((k) => (k.id === fullId ? { ...k, status } : k)));
+    const prev = kots.find((k) => k.id === fullId)?.status;
+    setKots((p) => p.map((k) => (k.id === fullId ? { ...k, status } : k)));
     if (!isSupabaseConfigured) return;
     const dbStatus = status === "new" ? "pending" : status === "preparing" ? "preparing" : "ready";
     const { error } = await supabase.from("orders").update({ status: dbStatus } as never).eq("id", fullId);
     if (error) {
-      // revert on error
-      setKots((prev) => prev.map((k) => (k.id === fullId ? { ...k, status: k.status } : k)));
-      console.error(error.message);
-    } else {
-      // also auto-free table when ready → served? keep table occupied until paid in POS
+      if (prev) setKots((p) => p.map((k) => (k.id === fullId ? { ...k, status: prev } : k)));
+      alert(error.message.includes("schema cache") ? "Schema cache stale — run NOTIFY pgrst, 'reload schema';" : error.message);
     }
   };
   const columns: KOT["status"][] = ["new", "preparing", "ready"];

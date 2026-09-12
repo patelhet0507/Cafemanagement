@@ -6,6 +6,7 @@ import { mockRawMaterials } from "@/lib/mock-data";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { formatCurrency } from "@/lib/utils";
 import { Plus } from "lucide-react";
+import { useToast } from "@/components/shared/toaster";
 
 const mockPurchases = [
   { id: "p1", material: "Milk", quantity: 10000, unit: "ml", cost: 600, supplier: "Amul Dairy", date: "2026-09-01" },
@@ -14,6 +15,7 @@ const mockPurchases = [
 ];
 
 export default function PurchasesPage() {
+  const toast = useToast();
   const [showForm, setShowForm] = useState(false);
   const [materials, setMaterials] = useState(mockRawMaterials);
   const [purchases, setPurchases] = useState(mockPurchases);
@@ -30,7 +32,7 @@ export default function PurchasesPage() {
     });
   }, []);
   const save = async () => {
-    if (!form.rm || !form.qty) return alert("Pick ingredient + quantity");
+    if (!form.rm || !form.qty) { toast("Pick ingredient + quantity", "error"); return; }
     setSaving(true);
     try {
       if (isSupabaseConfigured) {
@@ -45,8 +47,11 @@ export default function PurchasesPage() {
         }
       }
       setShowForm(false); setForm({ rm: "", qty: "", cost: "", supplier: "", invoice: "" });
-      alert(isSupabaseConfigured ? "Purchase saved to Supabase" : "Saved locally (set Supabase anon key for persistence)");
-    } catch (e) { alert(String(e)); } finally { setSaving(false); }
+      toast(isSupabaseConfigured ? "Purchase saved" : "Saved locally — set Supabase keys to persist");
+    } catch (e) {
+      const msg = String(e instanceof Error ? e.message : e);
+      toast(msg.includes("schema cache") ? "Schema cache stale — run NOTIFY pgrst, 'reload schema';" : msg, "error");
+    } finally { setSaving(false); }
   };
   return (
     <div className="space-y-6">

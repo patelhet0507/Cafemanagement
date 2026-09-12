@@ -8,16 +8,20 @@ import type { MenuItem, RawMaterial, Recipe } from "@/types/database";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { cn, formatCurrency } from "@/lib/utils";
 import { Plus, ChevronDown, ChevronUp, Trash2, Pencil, Save, X } from "lucide-react";
+import { ConfirmDialog } from "@/components/shared/confirm-dialog";
+import { useToast } from "@/components/shared/toaster";
 
 export default function RecipesPage() {
-  const { data: menuItems, refetch: refetchMenu } = useSupabaseTable<MenuItem>("menu_items", mockMenuItems);
+  const { data: menuItems } = useSupabaseTable<MenuItem>("menu_items", mockMenuItems);
   const { data: rawMaterials } = useSupabaseTable<RawMaterial>("raw_materials", mockRawMaterials);
   const { data: recipes, refetch } = useSupabaseTable<Recipe>("recipes", mockRecipes);
+  const toast = useToast();
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [addingFor, setAddingFor] = useState<string | null>(null);
   const [newIng, setNewIng] = useState({ raw_material_id: "", quantity: "" });
   const [editing, setEditing] = useState<Recipe | null>(null);
   const [editQty, setEditQty] = useState("");
+  const [confirm, setConfirm] = useState<Recipe | null>(null);
 
   const recipesByItem = useMemo(() => menuItems.map((item) => {
     const rs = recipes.filter((r) => r.menu_item_id === item.id);
@@ -28,33 +32,32 @@ export default function RecipesPage() {
   }), [menuItems, recipes, rawMaterials]);
 
   const handleAdd = async (menuItemId: string) => {
-    if (!newIng.raw_material_id || !newIng.quantity) return alert("Pick ingredient + quantity");
+    if (!newIng.raw_material_id || !newIng.quantity) { toast("Pick ingredient + quantity", "error"); return; }
     if (isSupabaseConfigured) {
       const { error } = await supabase.from("recipes").insert({ menu_item_id: menuItemId, raw_material_id: newIng.raw_material_id, quantity: Number(newIng.quantity) } as never);
-      if (error) return alert(error.message);
-      setNewIng({ raw_material_id: "", quantity: "" }); setAddingFor(null); refetch();
+      if (error) { toast(error.message.includes("schema cache") ? "Schema cache stale — NOTIFY pgrst, 'reload schema';" : error.message, "error"); return; }
+      setNewIng({ raw_material_id: "", quantity: "" }); setAddingFor(null); refetch(); toast("Ingredient added");
     } else {
-      alert("Set Supabase anon key to persist");
+      toast("Set Supabase anon key to persist", "error");
     }
   };
 
-  const handleDelete = async (r: Recipe) => {
-    if (!confirm("Remove ingredient?")) return;
-    if (isSupabaseConfigured) {
-      const { error } = await supabase.from("recipes").delete().eq("id", r.id);
-      if (error) return alert(error.message);
-      refetch();
-    }
-  };
+  const handleDelete = (r: Recipe) => setConfirm(r);
 
   const startEdit = (r: Recipe) => { setEditing(r); setEditQty(String(r.quantity)); };
   const saveEdit = async () => {
     if (!editing) return;
     if (isSupabaseConfigured) {
       const { error } = await supabase.from("recipes").update({ quantity: Number(editQty) } as never).eq("id", editing.id);
-      if (error) return alert(error.message);
-      setEditing(null); refetch();
+      if (error) { toast(error.message.includes("schema cache") ? "Schema cache stale — NOTIFY pgrst, 'reload schema';" : error.message, "error"); return; }
+      setEditing(null); refetch(); toast("Quantity updated");
     }
+  };
+  const confirmDelete = async () => {
+    if (!confirm) return;
+    const { error } = await supabase.from("recipes").delete().eq("id", confirm.id);
+    if (error) { toast(error.message.includes("schema cache") ? "Schema cache stale" : error.message, "error"); return; }
+    setConfirm(null); refetch(); toast("Ingredient removed");
   };
 
   return (
@@ -136,6 +139,7 @@ export default function RecipesPage() {
           </div>
         ))}
       </div>
+      <ConfirmDialog open={!!confirm} title="Remove ingredient?" description="This will remove the ingredient from the recipe." onConfirm={confirmDelete} onCancel={() => setConfirm(null)} />
     </div>
   );
 }

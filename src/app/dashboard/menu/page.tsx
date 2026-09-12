@@ -8,6 +8,8 @@ import type { MenuItem } from "@/types/database";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { formatCurrency } from "@/lib/utils";
 import { Plus, ToggleLeft, ToggleRight, Pencil, Trash2, X, Upload, ImageIcon, Search, FolderPlus, ChevronDown, ChevronRight } from "lucide-react";
+import { ConfirmDialog } from "@/components/shared/confirm-dialog";
+import { useToast } from "@/components/shared/toaster";
 
 const defaultSections = ["Recommended", "Main Course", "Appetizer", "Starter", "Hot Coffee", "Cold Coffee", "Chai & Tea", "Fresh Drinks", "Snacks", "Desserts"];
 const categoryEmoji: Record<string, string> = { "Hot Coffee": "☕", "Cold Coffee": "☕", "Chai & Tea": "🍵", "Fresh Drinks": "🧃", Snacks: "🥪", Desserts: "🍰", "Main Course": "🍛", Appetizer: "🥗", Starter: "🍢", Recommended: "⭐" };
@@ -88,6 +90,7 @@ function MenuModal({ open, onClose, form, setForm, onSave, saving, title, sectio
 export default function MenuManagementPage() {
   const { data: live, refetch, loading } = useSupabaseTable<MenuItem>("menu_items", mockMenuItems);
   const items = live;
+  const toast = useToast();
   const [sections, setSections] = useState<string[]>(defaultSections);
   const [search, setSearch] = useState("");
   const [expanded, setExpanded] = useState<Record<string, boolean>>({ "Main Course": true, Appetizer: true, Starter: true });
@@ -97,6 +100,7 @@ export default function MenuManagementPage() {
   const [saving, setSaving] = useState(false);
   const [showSection, setShowSection] = useState(false);
   const [newSection, setNewSection] = useState("");
+  const [confirm, setConfirm] = useState<{ title: string; desc: string; onConfirm: () => void } | null>(null);
 
   const allSections = useMemo(() => {
     const liveCats = Array.from(new Set(items.map((i) => i.category)));
@@ -127,9 +131,9 @@ export default function MenuManagementPage() {
 
   const addSection = () => {
     if (!newSection.trim()) return;
-    if (allSections.includes(newSection.trim())) return alert("Section already exists");
+    if (allSections.includes(newSection.trim())) { toast("Section already exists", "error"); return; }
     setSections([...sections, newSection.trim()]);
-    setNewSection(""); setShowSection(false);
+    setNewSection(""); setShowSection(false); toast("Section created");
   };
 
   const toggle = async (it: MenuItem) => {
@@ -139,25 +143,30 @@ export default function MenuManagementPage() {
     }
   };
 
-  const handleDelete = async (it: MenuItem) => {
-    if (!confirm(`Delete ${it.name}?`)) return;
-    if (isSupabaseConfigured) {
-      const { error } = await supabase.from("menu_items").delete().eq("id", it.id);
-      if (error) return alert(error.message);
-      refetch();
-    }
+  const handleDelete = (it: MenuItem) => {
+    setConfirm({ title: `Delete ${it.name}?`, desc: "This will permanently remove the item and its image.", onConfirm: async () => {
+      setConfirm(null);
+      if (isSupabaseConfigured) {
+        const { error } = await supabase.from("menu_items").delete().eq("id", it.id);
+        if (error) { toast(error.message.includes("schema cache") ? "Schema cache stale — run NOTIFY pgrst, 'reload schema'; or re-run 001 migration." : error.message, "error"); return; }
+        toast("Item deleted"); refetch();
+      }
+    }});
   };
 
-  const handleDeleteSection = async (sec: string) => {
+  const handleDeleteSection = (sec: string) => {
     const count = grouped[sec]?.length ?? 0;
-    if (count > 0 && !confirm(`Delete section "${sec}" with ${count} items? Items will remain but need reassignment.`)) return;
-    if (count > 0 && isSupabaseConfigured) {
-      // optionally delete items in section
-      if (!confirm(`Also delete ${count} items in this section? Cancel to keep items.`)) return;
-      await supabase.from("menu_items").delete().eq("category", sec);
-      refetch();
+    if (count > 0) {
+      setConfirm({ title: `Delete section "${sec}"?`, desc: `${count} items in this section. Choose to keep or delete them.`, onConfirm: () => {
+        setConfirm({ title: `Delete ${count} items too?`, desc: `Cancel keeps items (you must reassign their section). Confirm deletes everything.`, onConfirm: async () => {
+          setConfirm(null);
+          if (isSupabaseConfigured) { await supabase.from("menu_items").delete().eq("category", sec); refetch(); }
+          setSections((s) => s.filter((x) => x !== sec)); toast("Section deleted");
+        }});
+      }});
+      return;
     }
-    setSections(sections.filter((s) => s !== sec));
+    setSections((s) => s.filter((x) => x !== sec)); toast("Section deleted");
   };
 
   const saveAdd = async () => {
@@ -167,9 +176,9 @@ export default function MenuManagementPage() {
       if (isSupabaseConfigured) {
         const { error } = await supabase.from("menu_items").insert(payload as never);
         if (error) throw error;
-        setShowAdd(false); refetch();
-      }
-    } catch (e) { alert(String(e instanceof Error ? e.message : e)); } finally { setSaving(false); }
+        setShowAdd(false); toast("Item added"); refetch();
+      } else { toast("Supabase not configured", "error"); }
+    } catch (e) { toast(String(e instanceof Error ? e.message : e).includes("schema cache") ? "Schema cache stale — run NOTIFY pgrst, 'reload schema';" : String(e instanceof Error ? e.message : e), "error"); } finally { setSaving(false); }
   };
 
   const saveEdit = async () => {
@@ -180,9 +189,9 @@ export default function MenuManagementPage() {
       if (isSupabaseConfigured) {
         const { error } = await supabase.from("menu_items").update(payload as never).eq("id", editing.id);
         if (error) throw error;
-        setEditing(null); refetch();
+        setEditing(null); toast("Item updated"); refetch();
       }
-    } catch (e) { alert(String(e instanceof Error ? e.message : e)); } finally { setSaving(false); }
+    } catch (e) { toast(String(e instanceof Error ? e.message : e).includes("schema cache") ? "Schema cache stale — run NOTIFY pgrst, 'reload schema';" : String(e instanceof Error ? e.message : e), "error"); } finally { setSaving(false); }
   };
 
   return (
@@ -255,7 +264,7 @@ export default function MenuManagementPage() {
                             </div>
                             <div className="flex gap-2 mt-3">
                               <button onClick={() => { setEditing(item); setForm({ name: item.name, description: item.description, price: String(item.price), category: item.category, image_url: item.image_url || "", prep_time_min: String(item.prep_time_min), is_available: item.is_available }); }} className="flex-1 flex items-center justify-center gap-1 py-2 rounded-xl border border-border hover:bg-surface-hover text-xs font-medium"><Pencil className="w-3.5 h-3.5" /> Edit</button>
-                              <button onClick={() => { if (confirm(`Delete ${item.name}?`)) { supabase.from("menu_items").delete().eq("id", item.id).then(() => refetch()); } }} className="flex-1 flex items-center justify-center gap-1 py-2 rounded-xl bg-error/10 text-error hover:bg-error hover:text-white text-xs font-medium"><Trash2 className="w-3.5 h-3.5" /> Delete</button>
+                              <button onClick={() => handleDelete(item)} className="flex-1 flex items-center justify-center gap-1 py-2 rounded-xl bg-error/10 text-error hover:bg-error hover:text-white text-xs font-medium"><Trash2 className="w-3.5 h-3.5" /> Delete</button>
                             </div>
                           </div>
                         </div>
@@ -271,6 +280,7 @@ export default function MenuManagementPage() {
 
       <MenuModal open={showAdd} onClose={() => setShowAdd(false)} form={form} setForm={setForm} onSave={saveAdd} saving={saving} title="Add Item" sections={allSections} />
       <MenuModal open={!!editing} onClose={() => setEditing(null)} form={form} setForm={setForm} onSave={saveEdit} saving={saving} title="Edit Item" sections={allSections} />
+      <ConfirmDialog open={!!confirm} title={confirm?.title ?? ""} description={confirm?.desc} onConfirm={() => confirm?.onConfirm()} onCancel={() => setConfirm(null)} />
     </div>
   );
 }

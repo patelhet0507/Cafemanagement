@@ -33,11 +33,12 @@ export const viewport = {
 };
 
 import { AuthProvider } from "@/components/auth/auth-provider";
+import { ToasterProvider } from "@/components/shared/toaster";
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${inter.variable} ${playfair.variable} ${jetbrains.variable} h-full`}>
-      <body className="min-h-full bg-background text-text-primary antialiased"><AuthProvider>{children}</AuthProvider></body>
+      <body className="min-h-full bg-background text-text-primary antialiased"><ToasterProvider><AuthProvider>{children}</AuthProvider></ToasterProvider></body>
     </html>
   );
 }

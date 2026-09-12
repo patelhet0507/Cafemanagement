@@ -6,6 +6,7 @@ import { mockRawMaterials } from "@/lib/mock-data";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { formatCurrency } from "@/lib/utils";
 import { AlertTriangle, Plus } from "lucide-react";
+import { useToast } from "@/components/shared/toaster";
 
 const mockWastage = [
   { id: "w1", material: "Milk", quantity: 500, unit: "ml", reason: "Spillage", cost: 30, reported_by: "Rahul", date: "2026-09-02 14:30" },
@@ -15,6 +16,7 @@ const mockWastage = [
 const reasons = ["Spillage", "Burnt", "Expired", "Damaged", "Preparation error", "Other"];
 
 export default function WastagePage() {
+  const toast = useToast();
   const [showForm, setShowForm] = useState(false);
   const [materials, setMaterials] = useState(mockRawMaterials);
   const [logs, setLogs] = useState(mockWastage);
@@ -32,7 +34,7 @@ export default function WastagePage() {
   }, []);
   const totalCost = logs.reduce((s, w) => s + w.cost, 0);
   const save = async () => {
-    if (!form.rm || !form.qty) return alert("Pick ingredient + quantity");
+    if (!form.rm || !form.qty) { toast("Pick ingredient + quantity", "error"); return; }
     setSaving(true);
     try {
       if (isSupabaseConfigured) {
@@ -47,8 +49,11 @@ export default function WastagePage() {
         }
       }
       setShowForm(false); setForm({ rm: "", qty: "", reason: "Spillage", by: "" });
-      alert(isSupabaseConfigured ? "Wastage logged" : "Logged locally");
-    } catch (e) { alert(String(e)); } finally { setSaving(false); }
+      toast(isSupabaseConfigured ? "Wastage logged" : "Logged locally — set Supabase keys to persist");
+    } catch (e) {
+      const msg = String(e instanceof Error ? e.message : e);
+      toast(msg.includes("schema cache") ? "Schema cache stale — run NOTIFY pgrst, 'reload schema';" : msg, "error");
+    } finally { setSaving(false); }
   };
   return (
     <div className="space-y-6">

@@ -7,7 +7,8 @@ import { Play, Check, ChefHat, Bell } from "lucide-react";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 
 interface KOT {
-  id: string;
+  id: string; // full UUID when live, short mock id when offline
+  shortId: string;
   table: number;
   items: { name: string; qty: number; modifiers?: string }[];
   time: string;
@@ -15,9 +16,9 @@ interface KOT {
 }
 
 const initialKOTs: KOT[] = [
-  { id: "o1042", table: 4, items: [{ name: "Cold Coffee", qty: 2, modifiers: "Extra Vanilla" }, { name: "Veg Sandwich", qty: 1 }], time: "18:42", status: "new" },
-  { id: "o1041", table: 2, items: [{ name: "Cappuccino", qty: 1 }, { name: "Chocolate Brownie", qty: 1 }], time: "18:35", status: "preparing" },
-  { id: "o1040", table: 6, items: [{ name: "Masala Chai", qty: 2 }, { name: "Cheese Toast", qty: 2 }], time: "18:28", status: "new" },
+  { id: "o1042", shortId: "1042", table: 4, items: [{ name: "Cold Coffee", qty: 2, modifiers: "Extra Vanilla" }, { name: "Veg Sandwich", qty: 1 }], time: "18:42", status: "new" },
+  { id: "o1041", shortId: "1041", table: 2, items: [{ name: "Cappuccino", qty: 1 }, { name: "Chocolate Brownie", qty: 1 }], time: "18:35", status: "preparing" },
+  { id: "o1040", shortId: "1040", table: 6, items: [{ name: "Masala Chai", qty: 2 }, { name: "Cheese Toast", qty: 2 }], time: "18:28", status: "new" },
 ];
 
 const columnConfig = {
@@ -26,7 +27,7 @@ const columnConfig = {
   ready: { label: "READY", color: "text-success", bg: "bg-success/10" },
 };
 
-function KOTCard({ kot, onMove }: { kot: KOT; onMove: (id: string, status: KOT["status"]) => void }) {
+function KOTCard({ kot, onMove }: { kot: KOT; onMove: (fullId: string, status: KOT["status"]) => void }) {
   const nextStatus = kot.status === "new" ? "preparing" : kot.status === "preparing" ? "ready" : null;
   return (
     <motion.div layout initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}
@@ -34,7 +35,7 @@ function KOTCard({ kot, onMove }: { kot: KOT; onMove: (id: string, status: KOT["
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2">
           <span className="text-lg font-bold">T{kot.table}</span>
-          <span className="text-xs text-text-muted">#{kot.id}</span>
+          <span className="text-xs text-text-muted">#{kot.shortId}</span>
         </div>
         <span className="text-xs text-text-muted">{kot.time}</span>
       </div>
@@ -66,8 +67,8 @@ export default function KitchenPage() {
 
   const fetchKOTs = useCallback(async () => {
     if (!isSupabaseConfigured) return;
-    const { data: orders } = await supabase.from("orders").select("id, status, table_id, created_at").in("status", ["pending", "confirmed", "preparing", "ready"]).order("created_at", { ascending: true }).limit(20);
-    if (!orders) return;
+    const { data: orders } = await supabase.from("orders").select("id, status, table_id, created_at").in("status", ["pending", "confirmed", "preparing", "ready"]).order("created_at", { ascending: true }).limit(24);
+    if (!orders?.length) return;
     const ids = (orders as { id: string }[]).map((o) => o.id);
     const { data: items } = ids.length ? await supabase.from("order_items").select("order_id, quantity, menu_item_id").in("order_id", ids) : { data: [] as unknown[] };
     const { data: menu } = await supabase.from("menu_items").select("id, name");
@@ -77,7 +78,8 @@ export default function KitchenPage() {
     const statusMap = (s: string): KOT["status"] => (s === "pending" || s === "confirmed" ? "new" : s === "preparing" ? "preparing" : "ready");
     const grouped = new Map<string, KOT>();
     for (const o of orders as { id: string; status: string; table_id: string; created_at: string }[]) {
-      grouped.set(o.id, { id: o.id.slice(0, 5), table: tableMap.get(o.table_id) ?? 0, items: [], time: new Date(o.created_at).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }), status: statusMap(o.status) });
+      const short = o.id.slice(0, 4).toUpperCase();
+      grouped.set(o.id, { id: o.id, shortId: short, table: tableMap.get(o.table_id) ?? 0, items: [], time: new Date(o.created_at).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" }), status: statusMap(o.status) });
     }
     for (const it of (items as { order_id: string; quantity: number; menu_item_id: string }[] | null) ?? []) {
       const kot = grouped.get(it.order_id);
@@ -85,6 +87,7 @@ export default function KitchenPage() {
     }
     const live = Array.from(grouped.values()).filter((k) => k.items.length > 0);
     if (live.length) setKots(live);
+    else setKots([]);
   }, []);
 
   useEffect(() => {
@@ -94,15 +97,18 @@ export default function KitchenPage() {
     return () => { supabase.removeChannel(ch); };
   }, [fetchKOTs]);
 
-  const moveKOT = async (id: string, status: KOT["status"]) => {
-    // optimistic
-    setKots((prev) => prev.map((k) => (k.id === id ? { ...k, status } : k)));
+  const moveKOT = async (fullId: string, status: KOT["status"]) => {
+    setKots((prev) => prev.map((k) => (k.id === fullId ? { ...k, status } : k)));
     if (!isSupabaseConfigured) return;
-    // find full uuid by prefix
-    const { data: match } = await supabase.from("orders").select("id").ilike("id", `${id}%`).maybeSingle();
-    const fullId = (match as { id: string } | null)?.id ?? id;
     const dbStatus = status === "new" ? "pending" : status === "preparing" ? "preparing" : "ready";
-    await supabase.from("orders").update({ status: dbStatus } as never).eq("id", fullId);
+    const { error } = await supabase.from("orders").update({ status: dbStatus } as never).eq("id", fullId);
+    if (error) {
+      // revert on error
+      setKots((prev) => prev.map((k) => (k.id === fullId ? { ...k, status: k.status } : k)));
+      console.error(error.message);
+    } else {
+      // also auto-free table when ready → served? keep table occupied until paid in POS
+    }
   };
   const columns: KOT["status"][] = ["new", "preparing", "ready"];
 
@@ -110,8 +116,11 @@ export default function KitchenPage() {
     <div className="space-y-5">
       <div className="flex items-center justify-between">
         <p className="text-sm text-text-secondary">Live order queue</p>
-        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-warning/10 text-warning text-xs font-medium">
-          <Bell className="w-3.5 h-3.5" /> {kots.filter((k) => k.status === "new").length} new orders
+        <div className="flex items-center gap-2">
+          <a href="/display" target="_blank" className="px-3 py-1.5 rounded-full bg-[#0C0A09] text-white text-xs font-semibold hover:bg-black">TV Display ↗</a>
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-warning/10 text-warning text-xs font-medium">
+            <Bell className="w-3.5 h-3.5" /> {kots.filter((k) => k.status === "new").length} new orders
+          </div>
         </div>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

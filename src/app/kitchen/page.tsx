@@ -98,7 +98,7 @@ export default function KitchenPage() {
 
   const moveKOT = async (fullId: string, status: KOT["status"]) => {
     const prev = kots.find((k) => k.id === fullId)?.status;
-    // optimistic: for collected, remove from list immediately
+    const moved = kots.find((k) => k.id === fullId);
     if (status === "collected") setKots((p) => p.filter((k) => k.id !== fullId));
     else setKots((p) => p.map((k) => (k.id === fullId ? { ...k, status } : k)));
     if (!isSupabaseConfigured) return;
@@ -106,10 +106,22 @@ export default function KitchenPage() {
     const { error } = await supabase.from("orders").update({ status: dbStatus } as never).eq("id", fullId);
     if (error) {
       if (prev) setKots((p) => {
-        if (status === "collected") return [...p, kots.find((k) => k.id === fullId)!].filter(Boolean);
+        if (status === "collected" && moved) return [...p, moved];
         return p.map((k) => (k.id === fullId ? { ...k, status: prev } : k));
       });
       alert(error.message.includes("schema cache") ? "Schema cache stale — run NOTIFY pgrst, 'reload schema';" : error.message);
+      return;
+    }
+    // if collected, free table when no other active orders remain
+    if (status === "collected" && moved) {
+      try {
+        const { data: ord } = await supabase.from("orders").select("table_id").eq("id", fullId).single();
+        const tid = (ord as { table_id: string | null } | null)?.table_id;
+        if (tid) {
+          const { data: remaining } = await supabase.from("orders").select("id").eq("table_id", tid).in("status", ["pending", "confirmed", "preparing", "ready"]);
+          if (!remaining?.length) await supabase.from("tables").update({ status: "available" } as never).eq("id", tid);
+        }
+      } catch {}
     }
   };
   const columns: Array<"new" | "preparing" | "ready"> = ["new", "preparing", "ready"];

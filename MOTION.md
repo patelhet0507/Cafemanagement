@@ -135,6 +135,68 @@ const reduceMotion = useReducedMotion();
 </motion.div>
 ```
 
+## 11) Scroll-velocity marquee (React Bits recipe)
+
+```tsx
+import { motion, useScroll, useVelocity, useSpring, useTransform, useMotionValue, useAnimationFrame } from "framer-motion";
+
+const baseX = useMotionValue(0);
+const { scrollY } = useScroll();
+const velocityFactor = useTransform(useSpring(useVelocity(scrollY), { damping: 50, stiffness: 400 }), [0, 1000], [0, 4], { clamp: false });
+const x = useTransform(baseX, (v) => `${wrap(-50, 0, v)}%`); // wrap() maps into one loop width
+const direction = useRef(1);
+
+useAnimationFrame((_, delta) => {
+  let moveBy = direction.current * baseVelocity * (delta / 1000);
+  const vf = velocityFactor.get();
+  if (vf < 0) direction.current = -1;
+  else if (vf > 0) direction.current = 1;
+  moveBy += direction.current * moveBy * Math.abs(vf);
+  baseX.set(baseX.get() + moveBy);
+});
+
+<motion.div style={{ x }} className="flex w-max">{/* two identical halves */}</motion.div>
+```
+
+## 12) Scroll-linked word reveal (React Bits ScrollReveal recipe)
+
+```tsx
+const { scrollYProgress } = useScroll({ target: ref, offset: ["start 0.85", "end 0.45"] });
+words.map((w, i) => {
+  const opacity = useTransform(scrollYProgress, [i / n, (i + 1) / n], [0.14, 1]);
+  return <motion.span key={i} style={{ opacity }}>{w}</motion.span>;
+});
+```
+
+## 13) Spotlight hover (21st.dev spotlight-card recipe)
+
+```tsx
+<div onMouseMove={(e) => {
+  const r = e.currentTarget.getBoundingClientRect();
+  e.currentTarget.style.setProperty("--mx", `${e.clientX - r.left}px`);
+  e.currentTarget.style.setProperty("--my", `${e.clientY - r.top}px`);
+}}>
+  <div aria-hidden style={{ background: "radial-gradient(520px circle at var(--mx) var(--my), rgba(180,83,42,0.1), transparent 45%)" }} />
+</div>
+```
+
+## 14) Magnet CTA (React Bits magnet recipe)
+
+```tsx
+const x = useSpring(useMotionValue(0), { stiffness: 160, damping: 14 });
+const y = useSpring(useMotionValue(0), { stiffness: 160, damping: 14 });
+
+<motion.span
+  onMouseMove={(e) => {
+    const r = e.currentTarget.getBoundingClientRect();
+    x.set(((e.clientX - r.left) / r.width - 0.5) * 44);
+    y.set(((e.clientY - r.top) / r.height - 0.5) * 44);
+  }}
+  onMouseLeave={() => { x.set(0); y.set(0); }}
+  style={{ x, y }}
+/>
+```
+
 ## 10) React wiring pattern (scope + cleanup)
 
 ```tsx

@@ -14,6 +14,16 @@
   --accent: #B4532A;
   --accent-light: #FFF2EE;
   --accent-hover: #9C4420;
+  --foreground: #1C1917;
+  --muted: #F7F3EE;
+  --muted-foreground: #78716C;
+  --card: #FFFFFF;
+  --card-foreground: #1C1917;
+  --chart-1: #B4532A;
+  --chart-2: #7C5C3E;
+  --chart-3: #C99B6A;
+  --chart-4: #78716C;
+  --chart-5: #1C1917;
 }
 
 .dark {
@@ -48,6 +58,16 @@
   --info: #3B82F6;
   --info-bg: #DBEAFE;
   --info-text: #1E40AF;
+  --foreground: #F5F5F4;
+  --muted: #292524;
+  --muted-foreground: #A8A29E;
+  --card: #1C1917;
+  --card-foreground: #F5F5F4;
+  --chart-1: #EA580C;
+  --chart-2: #C99B6A;
+  --chart-3: #7C5C3E;
+  --chart-4: #A8A29E;
+  --chart-5: #F5F5F4;
 }
 
 @theme inline {
@@ -85,6 +105,16 @@
   --font-sans: "Satoshi", system-ui, sans-serif;
   --font-display: var(--font-display), "Satoshi", system-ui, sans-serif;
   --font-mono: var(--font-jetbrains), ui-monospace, monospace;
+  --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
 }
 
 body {

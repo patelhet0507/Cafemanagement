@@ -76,7 +76,7 @@ export default function LandingPage() {
                 <span key={w} data-hero-word className="inline-block mr-[0.24em]">{w}</span>
               ))}
               <span data-hero-cup className="inline-flex items-center align-middle mx-1">
-                <img src="https://picsum.photos/seed/cafeflow-latte/112/112" alt="Artisan flat white" className="w-11 h-11 sm:w-14 sm:h-14 rounded-full object-cover border-2 border-white shadow-sm inline-block" loading="lazy" />
+                <img src="/images/latte-art.jpg" alt="Artisan flat white" width={112} height={112} className="w-11 h-11 sm:w-14 sm:h-14 rounded-full object-cover border-2 border-white shadow-sm inline-block" loading="lazy" />
               </span>{" "}
               {WORDS_2.map((w) => (
                 <span key={w} data-hero-word className="inline-block mr-[0.24em]">{w}</span>

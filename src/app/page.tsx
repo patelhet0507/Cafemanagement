@@ -15,6 +15,7 @@ export default function LandingPage() {
   const rootRef = useRef<HTMLDivElement>(null);
 
   useLayoutEffect(() => {
+    let removeRefresh = () => {};
     const ctx = gsap.context(() => {
       const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       if (reduced) {
@@ -54,7 +55,36 @@ export default function LandingPage() {
         });
       });
 
-      // 4) Stats count-up on scroll into view
+      // 4) Scroll progress bar under sticky nav (Stitch SPEC 01)
+      gsap.to("[data-scroll-progress]", {
+        scaleX: 1,
+        ease: "none",
+        scrollTrigger: { trigger: document.body, start: "top top", end: "bottom bottom", scrub: 0.3 },
+      });
+
+      // 5) Hero parallax scrub (Stitch SPEC 01: left y -60 fade, right card y +40)
+      const mm = gsap.matchMedia();
+      mm.add("(prefers-reduced-motion: no-preference)", () => {
+        gsap.to("[data-hero-left]", {
+          y: -60,
+          opacity: 0.2,
+          ease: "none",
+          scrollTrigger: { trigger: "[data-hero-section]", start: "top top", end: "bottom top", scrub: 0.8 },
+        });
+        gsap.to("[data-hero-right]", {
+          y: 40,
+          ease: "none",
+          scrollTrigger: { trigger: "[data-hero-section]", start: "top top", end: "bottom top", scrub: 0.8 },
+        });
+      });
+
+      // 6) Refresh triggers after fonts/images load (ui-ux-pro-max guidance)
+      const refresh = () => ScrollTrigger.refresh();
+      window.addEventListener("load", refresh);
+      if (document.fonts) document.fonts.ready.then(refresh).catch(() => {});
+      removeRefresh = () => window.removeEventListener("load", refresh);
+
+      // 7) Stats count-up on scroll into view
       gsap.utils.toArray<HTMLElement>("[data-count]").forEach((el) => {
         const target = parseFloat(el.dataset.count || "0");
         const prefix = el.dataset.prefix || "";
@@ -76,7 +106,7 @@ export default function LandingPage() {
         });
       });
     }, rootRef);
-    return () => ctx.revert();
+    return () => { removeRefresh(); ctx.revert(); };
   }, []);
 
   return (
@@ -94,12 +124,13 @@ export default function LandingPage() {
             <span className="hidden sm:inline text-xs text-text-muted">Customer ordering only — staff at <span className="font-mono">/login</span></span>
           </div>
         </div>
+        <div data-scroll-progress className="h-0.5 w-full bg-accent origin-left scale-x-0" />
       </nav>
 
       <main className="flex-1">
         {/* Hero — editorial asymmetric */}
-        <section className="max-w-[1160px] mx-auto px-6 lg:px-8 pt-10 lg:pt-16 pb-8 grid lg:grid-cols-[1.1fr_0.9fr] gap-10 lg:gap-12 items-start">
-          <div>
+        <section data-hero-section className="max-w-[1160px] mx-auto px-6 lg:px-8 pt-10 lg:pt-16 pb-8 grid lg:grid-cols-[1.1fr_0.9fr] gap-10 lg:gap-12 items-start">
+          <div data-hero-left>
             <div data-hero-step="eyebrow" className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.15em] text-text-muted">
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent opacity-75" />
@@ -144,7 +175,7 @@ export default function LandingPage() {
           </div>
 
           {/* Live order preview card */}
-          <div data-hero-step="card" className="relative lg:sticky lg:top-[84px]">
+          <div data-hero-right data-hero-step="card" className="relative lg:sticky lg:top-[84px]">
             <div data-float-card className="rounded-[24px] border border-border bg-surface shadow-[0_20px_60px_rgba(28,25,23,0.08)] overflow-hidden">
               <div className="h-10 flex items-center gap-1.5 px-4 border-b border-border bg-background">
                 <span className="w-2.5 h-2.5 rounded-full bg-[#FF5F56] border border-black/10" />
@@ -221,7 +252,7 @@ export default function LandingPage() {
       </main>
 
       <footer className="border-t border-border">
-        <div className="max-w-[1160px] mx-auto px-6 lg:px-8 h-14 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-text-muted">
+        <div data-reveal className="max-w-[1160px] mx-auto px-6 lg:px-8 h-14 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-text-muted">
           <span>© {new Date().getFullYear()} CafeFlow — Built for independent cafes</span>
           <div className="flex items-center gap-2">
             <Link href="/menu?table=1" className="px-3 py-1.5 rounded-full border border-border hover:bg-surface-hover">Menu</Link>

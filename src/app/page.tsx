@@ -23,29 +23,42 @@ export default function LandingPage() {
         {/* Hero — editorial asymmetric */}
         <section className="max-w-[1160px] mx-auto px-6 lg:px-8 pt-10 lg:pt-16 pb-8 grid lg:grid-cols-[1.1fr_0.9fr] gap-10 lg:gap-12 items-start">
           <div>
-            <div className="inline-flex items-center gap-2 text-xs font-medium px-3 py-1.5 rounded-full bg-accent-light border border-accent/15 text-accent">
-              <Sparkles className="w-3.5 h-3.5" /> New — variance report catches pilferage in 14 days
+            <div className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.15em] text-text-muted">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-accent" />
+              </span>
+              Bistro operating system · Table-first dispatch
             </div>
-            <h1 className="font-serif text-[40px] sm:text-[54px] lg:text-[62px] font-semibold tracking-[-0.03em] leading-[0.95] mt-5">
-              The <span className="text-accent italic font-normal">operating</span><br /> system for your<br /> cafe.
+            <h1 className="font-display text-[40px] sm:text-[54px] lg:text-[62px] font-semibold tracking-[-0.03em] leading-[1.02] mt-4">
+              Turn every table into a swift{" "}
+              <span className="inline-flex items-center align-middle mx-1">
+                <img src="https://picsum.photos/seed/cafeflow-latte/112/112" alt="Artisan flat white" className="w-11 h-11 sm:w-14 sm:h-14 rounded-full object-cover border-2 border-white shadow-sm inline-block" loading="lazy" />
+              </span>{" "}
+              revenue stream.
             </h1>
             <p className="mt-5 text-[15px] sm:text-lg leading-relaxed text-text-secondary max-w-[52ch]">
               QR ordering that clears the counter. Recipe-linked inventory that explains every gram. One quiet dashboard that
               tells you what to reorder before you run out.
             </p>
             <div className="flex flex-wrap items-center gap-3 mt-8">
-              <Link href="/scan" className="inline-flex items-center gap-2 px-6 py-3.5 rounded-full bg-accent text-white font-semibold hover:bg-accent-hover transition-colors shadow-sm">
+              <Link href="/scan" className="btn-tactile inline-flex items-center gap-2 px-6 py-3.5 rounded-full bg-accent text-white font-semibold hover:bg-accent-hover transition-colors shadow-sm min-h-[44px]">
                 Try Customer Menu <ArrowRight className="w-4 h-4" />
               </Link>
-              <span className="text-xs text-text-muted flex items-center gap-1.5"><QrCode className="w-3.5 h-3.5" /> Scan table QR to order</span>
+              <Link href="/dashboard" className="inline-flex items-center gap-1.5 text-sm font-semibold text-text-secondary hover:text-accent transition-colors">
+                View live demo <ArrowRight className="w-4 h-4" />
+              </Link>
             </div>
 
-            <div className="mt-10 flex flex-wrap gap-6 text-sm border-t border-border pt-6">
-              <div><p className="text-2xl font-semibold font-mono tracking-tight">₹28,450</p><p className="text-xs text-text-muted">Today, live from demo cafe</p></div>
+            <p className="mt-8 font-mono text-[11px] tracking-wide text-text-muted">
+              42s avg reorder speed · 0% app download requirement · 100% contactless settlement
+            </p>
+            <div className="mt-4 flex flex-wrap gap-6 text-sm border-t border-border pt-6">
+              <div><p className="text-2xl font-semibold font-mono tracking-tight tabular-nums">₹28,450</p><p className="text-xs text-text-muted">Today, live from demo cafe</p></div>
               <div className="w-px bg-border hidden sm:block" />
-              <div><p className="text-2xl font-semibold font-mono tracking-tight">47 orders</p><p className="text-xs text-text-muted">Average ₹605</p></div>
+              <div><p className="text-2xl font-semibold font-mono tracking-tight tabular-nums">47 orders</p><p className="text-xs text-text-muted">Average ₹605</p></div>
               <div className="w-px bg-border hidden sm:block" />
-              <div><p className="text-2xl font-semibold font-mono tracking-tight">—18%</p><p className="text-xs text-text-muted">waste after recipes</p></div>
+              <div><p className="text-2xl font-semibold font-mono tracking-tight tabular-nums">—18%</p><p className="text-xs text-text-muted">waste after recipes</p></div>
             </div>
           </div>
 

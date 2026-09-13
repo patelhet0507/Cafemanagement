@@ -11,9 +11,9 @@
   --text-muted: #78716C;
   --primary: #1C1917;
   --primary-hover: #292524;
-  --accent: #C2410C;
-  --accent-light: #FFF7ED;
-  --accent-hover: #9A3412;
+  --accent: #B4532A;
+  --accent-light: #FFF2EE;
+  --accent-hover: #9C4420;
 }
 
 .dark {
@@ -82,17 +82,61 @@
   --color-info: var(--info);
   --color-info-bg: var(--info-bg);
   --color-info-text: var(--info-text);
-  --font-sans: var(--font-inter);
-  --font-serif: var(--font-playfair);
-  --font-mono: var(--font-jetbrains);
+  --font-sans: "Satoshi", system-ui, sans-serif;
+  --font-display: var(--font-display), "Satoshi", system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, monospace;
 }
 
 body {
   background: var(--background);
   color: var(--text-primary);
-  font-family: var(--font-inter), system-ui, sans-serif;
+  font-family: "Satoshi", system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+.font-display {
+  font-family: var(--font-display), "Satoshi", system-ui, sans-serif;
+}
+
+/* Stitch motion language: tactile press, cascade rise, shimmer */
+.btn-tactile {
+  transition: transform 0.15s ease, background-color 0.2s ease;
+}
+.btn-tactile:active {
+  transform: translateY(1px);
+}
+
+@keyframes stitch-rise {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.cascade > * {
+  animation: stitch-rise 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.cascade > *:nth-child(1) { animation-delay: 0.02s; }
+.cascade > *:nth-child(2) { animation-delay: 0.09s; }
+.cascade > *:nth-child(3) { animation-delay: 0.16s; }
+.cascade > *:nth-child(4) { animation-delay: 0.23s; }
+.cascade > *:nth-child(5) { animation-delay: 0.3s; }
+.cascade > *:nth-child(6) { animation-delay: 0.37s; }
+
+@keyframes stitch-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.shimmer {
+  background: linear-gradient(100deg, transparent 40%, rgba(180, 83, 42, 0.12) 50%, transparent 60%);
+  background-size: 200% 100%;
+  animation: stitch-shimmer 2.4s ease-in-out infinite;
+}
+
+@keyframes stitch-breathe {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+.breathe {
+  animation: stitch-breathe 2.2s ease-in-out infinite;
 }
 
 ::-webkit-scrollbar { width: 6px; height: 6px; }

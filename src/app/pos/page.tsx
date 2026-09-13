@@ -240,7 +240,7 @@ export default function POSPage() {
           <div className="w-full max-w-sm bg-surface rounded-[24px] shadow-2xl overflow-hidden" onClick={(e) => e.stopPropagation()} id="qr-print-area">
             <div className="bg-accent text-white px-6 py-5 text-center">
               <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center mx-auto"><Coffee className="w-5 h-5" /></div>
-              <h3 className="font-serif text-xl font-semibold mt-2">CafeFlow</h3>
+              <h3 className="font-display text-xl font-semibold mt-2">CafeFlow</h3>
               <p className="text-xs tracking-widest opacity-70">SCAN TO ORDER</p>
             </div>
             <div className="p-6 text-center">

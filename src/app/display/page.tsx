@@ -49,7 +49,7 @@ export default function DisplayPage() {
         {orders.length === 0 ? (
           <div className="text-center">
             <p className="text-[11px] tracking-[0.2em] text-white/40">READY ORDERS</p>
-            <h1 className="font-serif text-[56px] lg:text-[84px] font-bold tracking-tight mt-2 text-white/20">—</h1>
+            <h1 className="font-display text-[56px] lg:text-[84px] font-bold tracking-tight mt-2 text-white/20">—</h1>
             <p className="text-lg text-white/50 mt-4">No ready orders</p>
           </div>
         ) : (

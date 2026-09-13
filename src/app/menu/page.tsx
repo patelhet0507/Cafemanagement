@@ -284,8 +284,12 @@ function MenuContent() {
               <button onClick={() => setOrderType("dine_in")} className={`px-3 py-1.5 font-medium ${orderType === "dine_in" ? "bg-accent text-white" : "bg-surface hover:bg-surface-hover"}`}>Dine-in</button>
               <button onClick={() => setOrderType("takeout")} className={`px-3 py-1.5 font-medium flex items-center gap-1 ${orderType === "takeout" ? "bg-accent text-white" : "bg-surface hover:bg-surface-hover"}`}><Bike className="w-3 h-3" /> Takeout</button>
             </div>
-            <span className="text-xs font-medium px-3 py-1.5 rounded-full bg-accent/10 text-accent">
-              {orderType === "takeout" ? "Takeout" : `Table ${String(tableNumber).padStart(2, "0")}`}
+            <span className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full bg-surface border border-border">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-accent" />
+              </span>
+              <span className="font-mono">{orderType === "takeout" ? "Takeout" : `Table ${String(tableNumber).padStart(2, "0")}`}</span>
             </span>
           </div>
         </div>
@@ -322,7 +326,7 @@ function MenuContent() {
         {menuLoading ? <p className="text-sm text-text-muted text-center py-8">Loading menu…</p> : null}
         {!menuLoading && menuItems.length === 0 && <p className="text-sm text-text-muted text-center py-12">No menu items — add items in Dashboard → Menu (Supabase live).</p>}
         <div className="grid grid-cols-2 gap-3">
-          {filteredItems.map((item) => <MenuCard key={item.id} item={item} onAdd={addToCart} />)}
+          {filteredItems.map((item, i) => <MenuCard key={item.id} item={item} index={i} onAdd={addToCart} />)}
         </div>
         {placing ? <p className="text-xs text-center text-text-muted mt-3">Placing order…</p> : null}
       </main>

@@ -1,15 +1,9 @@
 import type { Metadata } from "next";
-import { Inter, Playfair_Display, JetBrains_Mono } from "next/font/google";
+import { Outfit, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
-const inter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin"],
-  display: "swap",
-});
-
-const playfair = Playfair_Display({
-  variable: "--font-playfair",
+const outfit = Outfit({
+  variable: "--font-display",
   subsets: ["latin"],
   display: "swap",
 });
@@ -29,7 +23,7 @@ export const metadata: Metadata = {
 export const viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#D97706",
+  themeColor: "#B4532A",
 };
 
 import { AuthProvider } from "@/components/auth/auth-provider";
@@ -37,7 +31,10 @@ import { ToasterProvider } from "@/components/shared/toaster";
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${inter.variable} ${playfair.variable} ${jetbrains.variable} h-full`}>
+    <html lang="en" className={`${outfit.variable} ${jetbrains.variable} h-full`}>
+      <head>
+        <link href="https://api.fontshare.com/v2/css?f[]=satoshi@400,500,700&display=swap" rel="stylesheet" />
+      </head>
       <body className="min-h-full bg-background text-text-primary antialiased"><ToasterProvider><AuthProvider>{children}</AuthProvider></ToasterProvider></body>
     </html>
   );

@@ -104,7 +104,7 @@ function LoginInner() {
 
           <div data-parallax id="hero-inner" className="relative">
             <p className="text-[11px] tracking-[0.2em] font-semibold text-white/60">EST. 2024 • INDEPENDENT CAFES • INDIA</p>
-            <h1 ref={heroRef} className="font-serif text-[42px] sm:text-[56px] lg:text-[68px] font-bold leading-[0.9] tracking-[-0.03em] mt-3">
+            <h1 ref={heroRef} className="font-display text-[42px] sm:text-[56px] lg:text-[68px] font-bold leading-[0.9] tracking-[-0.03em] mt-3">
               Staff only.
               <br />
               <span className="font-normal italic text-accent">Customers</span> use QR.

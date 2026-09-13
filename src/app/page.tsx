@@ -3,19 +3,26 @@
 import { useLayoutEffect, useRef } from "react";
 import Link from "next/link";
 import gsap from "gsap";
-import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { motion, useReducedMotion } from "framer-motion";
+import {
+  heroEntranceTimeline,
+  cardMicroLoops,
+  scrollReveals,
+  scrollProgressBar,
+  heroParallaxScrub,
+  statCountUps,
+  refreshOnLoad,
+} from "@/components/landing/landing-motion";
 import { Coffee, ArrowRight, QrCode, Boxes, LineChart, ShieldCheck, ScanLine } from "lucide-react";
-
-gsap.registerPlugin(ScrollTrigger);
 
 const WORDS_1 = ["Turn", "every", "table", "into", "a", "swift"];
 const WORDS_2 = ["revenue", "stream."];
 
 export default function LandingPage() {
   const rootRef = useRef<HTMLDivElement>(null);
+  const reduceMotion = useReducedMotion();
 
   useLayoutEffect(() => {
-    let removeRefresh = () => {};
     const ctx = gsap.context(() => {
       const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       if (reduced) {
@@ -23,89 +30,14 @@ export default function LandingPage() {
         return;
       }
 
-      // 1) Hero entrance timeline (Stitch spec: expo stagger 0.06s, back pop for cup)
-      const tl = gsap.timeline({ defaults: { ease: "expo.out" } });
-      tl.from("[data-hero-step='eyebrow']", { y: 8, opacity: 0, duration: 0.8 })
-        .from("[data-hero-word]", { y: 22, opacity: 0, duration: 0.85, stagger: 0.06 }, 0.14)
-        .from("[data-hero-cup]", { scale: 0.8, opacity: 0, duration: 0.9, ease: "back.out(1.56)" }, 0.44)
-        .from("[data-hero-step='copy']", { y: 22, opacity: 0, duration: 0.85 }, 0.62)
-        .from("[data-hero-step='cta']", { y: 22, opacity: 0, duration: 0.85 }, 0.7)
-        .from("[data-hero-step='ticker']", { y: 22, opacity: 0, duration: 0.85 }, 0.78)
-        .from("[data-hero-step='card']", { y: 24, opacity: 0, duration: 1 }, 0.3);
-
-      // 2) Live order card micro-loops (Stitch: breathe 2.4s, float 5.2s)
-      gsap.to("[data-float-card]", { y: -5, duration: 2.6, ease: "sine.inOut", yoyo: true, repeat: -1 });
-      gsap.to("[data-breathe-pill]", {
-        scale: 1.03,
-        boxShadow: "0 0 0 5px rgba(180, 83, 42, 0)",
-        duration: 1.2,
-        ease: "sine.inOut",
-        yoyo: true,
-        repeat: -1,
-      });
-
-      // 3) Scroll-triggered reveals for feature sections (slide up 24px, once)
-      gsap.utils.toArray<HTMLElement>("[data-reveal]").forEach((el) => {
-        gsap.from(el, {
-          y: 24,
-          opacity: 0,
-          duration: 0.85,
-          ease: "expo.out",
-          scrollTrigger: { trigger: el, start: "top 85%", once: true },
-        });
-      });
-
-      // 4) Scroll progress bar under sticky nav (Stitch SPEC 01)
-      gsap.to("[data-scroll-progress]", {
-        scaleX: 1,
-        ease: "none",
-        scrollTrigger: { trigger: document.body, start: "top top", end: "bottom bottom", scrub: 0.3 },
-      });
-
-      // 5) Hero parallax scrub (Stitch SPEC 01: left y -60 fade, right card y +40)
-      const mm = gsap.matchMedia();
-      mm.add("(prefers-reduced-motion: no-preference)", () => {
-        gsap.to("[data-hero-left]", {
-          y: -60,
-          opacity: 0.2,
-          ease: "none",
-          scrollTrigger: { trigger: "[data-hero-section]", start: "top top", end: "bottom top", scrub: 0.8 },
-        });
-        gsap.to("[data-hero-right]", {
-          y: 40,
-          ease: "none",
-          scrollTrigger: { trigger: "[data-hero-section]", start: "top top", end: "bottom top", scrub: 0.8 },
-        });
-      });
-
-      // 6) Refresh triggers after fonts/images load (ui-ux-pro-max guidance)
-      const refresh = () => ScrollTrigger.refresh();
-      window.addEventListener("load", refresh);
-      if (document.fonts) document.fonts.ready.then(refresh).catch(() => {});
-      removeRefresh = () => window.removeEventListener("load", refresh);
-
-      // 7) Stats count-up on scroll into view
-      gsap.utils.toArray<HTMLElement>("[data-count]").forEach((el) => {
-        const target = parseFloat(el.dataset.count || "0");
-        const prefix = el.dataset.prefix || "";
-        const obj = { val: 0 };
-        ScrollTrigger.create({
-          trigger: el,
-          start: "top 90%",
-          once: true,
-          onEnter: () => {
-            gsap.to(obj, {
-              val: target,
-              duration: 1.6,
-              ease: "expo.out",
-              onUpdate: () => {
-                el.textContent = prefix + Math.round(obj.val).toLocaleString("en-IN");
-              },
-            });
-          },
-        });
-      });
+      heroEntranceTimeline();
+      cardMicroLoops();
+      scrollReveals();
+      scrollProgressBar();
+      heroParallaxScrub();
+      statCountUps();
     }, rootRef);
+    const removeRefresh = refreshOnLoad();
     return () => { removeRefresh(); ctx.revert(); };
   }, []);
 
@@ -154,9 +86,11 @@ export default function LandingPage() {
               tells you what to reorder before you run out.
             </p>
             <div data-hero-step="cta" className="flex flex-wrap items-center gap-3 mt-8">
-              <Link href="/scan" className="btn-tactile inline-flex items-center gap-2 px-6 py-3.5 rounded-full bg-accent text-white font-semibold hover:bg-accent-hover transition-colors shadow-sm min-h-[44px]">
-                Try Customer Menu <ArrowRight className="w-4 h-4" />
-              </Link>
+              <motion.span whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97, y: 1 }} transition={{ type: "spring", stiffness: 400, damping: 22 }} className="inline-flex">
+                <Link href="/scan" className="btn-tactile inline-flex items-center gap-2 px-6 py-3.5 rounded-full bg-accent text-white font-semibold hover:bg-accent-hover transition-colors shadow-sm min-h-[44px]">
+                  Try Customer Menu <ArrowRight className="w-4 h-4" />
+                </Link>
+              </motion.span>
               <Link href="/dashboard" className="inline-flex items-center gap-1.5 text-sm font-semibold text-text-secondary hover:text-accent transition-colors">
                 View live demo <ArrowRight className="w-4 h-4" />
               </Link>
@@ -214,10 +148,14 @@ export default function LandingPage() {
                 <p className="text-[11px] text-text-muted mt-2 flex justify-between"><span>Ordered → Preparing → Ready</span><span className="font-medium text-accent">Preparing</span></p>
               </div>
             </div>
-            <div className="absolute -bottom-4 -right-2 sm:right-4 bg-surface border border-border rounded-2xl shadow-lg px-3 py-2.5 flex items-center gap-2.5">
+            <motion.div
+              animate={reduceMotion ? undefined : { y: [0, -7, 0] }}
+              transition={{ duration: 4.2, ease: "easeInOut", repeat: Infinity }}
+              className="absolute -bottom-4 -right-2 sm:right-4 bg-surface border border-border rounded-2xl shadow-lg px-3 py-2.5 flex items-center gap-2.5"
+            >
               <div className="w-8 h-8 rounded-xl bg-success-bg text-success flex items-center justify-center"><LineChart className="w-4 h-4" /></div>
               <div><p className="text-xs font-semibold leading-none">Sales +18.4%</p><p className="text-[11px] text-text-muted">vs yesterday</p></div>
-            </div>
+            </motion.div>
           </div>
         </section>
 
